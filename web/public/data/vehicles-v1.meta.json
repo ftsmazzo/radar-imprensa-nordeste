@@ -1,0 +1,29 @@
+{
+  "extractedAt": "2026-08-20T15:07:24.960Z",
+  "source": "https://radarimprensanordeste.manus.space/",
+  "count": 3664,
+  "byType": {
+    "Portal": 947,
+    "Rádio": 1169,
+    "TV": 588,
+    "Jornal": 206,
+    "Blog": 754
+  },
+  "byUf": {
+    "AL": 272,
+    "BA": 989,
+    "CE": 348,
+    "MA": 516,
+    "PB": 383,
+    "PE": 454,
+    "PI": 288,
+    "RN": 201,
+    "SE": 213
+  },
+  "contacts": {
+    "withEmail": 463,
+    "withInstagram": 1323,
+    "withPhone": 1201,
+    "withWebsite": 1907
+  }
+}

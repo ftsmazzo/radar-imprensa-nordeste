@@ -1,0 +1,12 @@
+web/node_modules
+server/node_modules
+web/dist
+node_modules
+.DS_Store
+*.log
+data/debug-slice.txt
+data/extract-err.txt
+data/meta-only.txt
+.env
+.env.*
+!.env.example

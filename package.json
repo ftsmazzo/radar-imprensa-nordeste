@@ -1,0 +1,11 @@
+{
+  "name": "radar-imprensa-nordeste-v2",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "extract": "node scripts/extract-v1.mjs",
+    "score": "node scripts/score-v0.mjs",
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build"
+  }
+}

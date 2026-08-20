@@ -1,0 +1,71 @@
+{
+  "scoredAt": "2026-08-20T15:07:30.288Z",
+  "scoreVersion": "v0-provisional",
+  "total": 3664,
+  "groups": {
+    "AL": {
+      "Portal": 20,
+      "Rádio": 20,
+      "TV": 20,
+      "Jornal": 14,
+      "Blog": 20
+    },
+    "BA": {
+      "Rádio": 20,
+      "TV": 20,
+      "Portal": 20,
+      "Jornal": 20,
+      "Blog": 20
+    },
+    "CE": {
+      "Portal": 20,
+      "Rádio": 20,
+      "Blog": 20,
+      "Jornal": 20,
+      "TV": 20
+    },
+    "MA": {
+      "Blog": 20,
+      "Portal": 20,
+      "TV": 20,
+      "Rádio": 20,
+      "Jornal": 20
+    },
+    "PB": {
+      "Blog": 20,
+      "TV": 20,
+      "Rádio": 20,
+      "Portal": 20,
+      "Jornal": 8
+    },
+    "PE": {
+      "Portal": 20,
+      "Rádio": 20,
+      "Blog": 20,
+      "Jornal": 20,
+      "TV": 20
+    },
+    "PI": {
+      "Portal": 20,
+      "Blog": 20,
+      "TV": 20,
+      "Rádio": 20,
+      "Jornal": 6
+    },
+    "RN": {
+      "Blog": 20,
+      "Portal": 20,
+      "TV": 20,
+      "Rádio": 20,
+      "Jornal": 14
+    },
+    "SE": {
+      "Blog": 20,
+      "Rádio": 20,
+      "Portal": 20,
+      "TV": 16,
+      "Jornal": 8
+    }
+  },
+  "note": "Score provisional sem métricas reais de audiência/seguidores. Recalibrar após Apify."
+}

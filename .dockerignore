@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.git
+web/node_modules
+web/dist
+data/debug-slice.txt
+data/extract-err.txt
+data/vehicles-v1.json
+data/top20-v0.json
