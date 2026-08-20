@@ -96,6 +96,16 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [enrichMsg, setEnrichMsg] = useState<string | null>(null);
   const [enriching, setEnriching] = useState(false);
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchAssunto, setDispatchAssunto] = useState("");
+  const [dispatchTexto, setDispatchTexto] = useState("");
+  const [dispatchLink, setDispatchLink] = useState("");
+  const [dispatchCanal, setDispatchCanal] = useState<"whatsapp" | "email" | "ambos">("whatsapp");
+  const [dispatchModo, setDispatchModo] = useState<"simulacao" | "enviar">("simulacao");
+  const [dispatchInstancia, setDispatchInstancia] = useState("Agente");
+  const [dispatchIds, setDispatchIds] = useState<string[]>([]);
+  const [dispatchBusy, setDispatchBusy] = useState(false);
+  const [dispatchResult, setDispatchResult] = useState<string | null>(null);
 
   const loadMeta = () =>
     fetch("/api/meta")
@@ -127,6 +137,55 @@ export default function App() {
   useEffect(() => {
     loadList();
   }, [uf, type]);
+
+  useEffect(() => {
+    if (!dispatchOpen) return;
+    setDispatchIds(list.map((v) => v.id));
+    setDispatchResult(null);
+  }, [dispatchOpen, list]);
+
+  const dispatchPreview = useMemo(() => {
+    const selected = list.filter((v) => dispatchIds.includes(v.id));
+    const withPhone = selected.filter((v) => v.phone).length;
+    const withEmail = selected.filter((v) => v.email).length;
+    return { total: selected.length, withPhone, withEmail };
+  }, [list, dispatchIds]);
+
+  const toggleDispatchId = (id: string) => {
+    setDispatchIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const runDispatch = async () => {
+    setDispatchBusy(true);
+    setDispatchResult(null);
+    try {
+      const res = await fetch("/api/dispatch", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          uf,
+          tipo: type,
+          assunto: dispatchAssunto,
+          texto: dispatchTexto,
+          link: dispatchLink,
+          canal: dispatchCanal,
+          modo: dispatchModo,
+          instancia: dispatchInstancia,
+          vehicleIds: dispatchIds,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      const msg =
+        data.n8n?.message ||
+        `${data.modo === "enviar" ? "Disparo enviado" : "Simulação ok"} · ${data.comContato}/${data.totalVeiculos} com contato`;
+      setDispatchResult(msg);
+    } catch (e) {
+      setDispatchResult(String(e));
+    } finally {
+      setDispatchBusy(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -257,6 +316,9 @@ export default function App() {
         <div className="dock-actions">
           <button type="button" className="btn ghost" onClick={exportCsv} disabled={!filtered.length}>
             CSV
+          </button>
+          <button type="button" className="btn ghost" onClick={() => setDispatchOpen(true)} disabled={!list.length}>
+            Disparo
           </button>
           <button type="button" className="btn" onClick={runEnrich} disabled={enriching}>
             {enriching ? "Enriquecendo…" : `Apify ${uf}`}
@@ -465,8 +527,137 @@ export default function App() {
           Radar v1
         </a>
         {" · "}
-        Enrichment Apify · ranking dinâmico
+        Enrichment Apify · ranking dinâmico · disparo via webhook
       </footer>
+
+      {dispatchOpen && (
+        <div className="drawer-backdrop" onClick={() => !dispatchBusy && setDispatchOpen(false)}>
+          <aside
+            className="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dispatch-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="drawer-head">
+              <div>
+                <p className="eyebrow">Automação</p>
+                <h2 id="dispatch-title">Disparo Top 20</h2>
+                <p className="drawer-sub">
+                  {STATE_NAME[uf]} · {type} · envia o material pelo webhook do n8n Cursor
+                </p>
+              </div>
+              <button type="button" className="btn ghost" onClick={() => setDispatchOpen(false)} disabled={dispatchBusy}>
+                Fechar
+              </button>
+            </header>
+
+            <div className="drawer-grid">
+              <label>
+                Assunto
+                <input
+                  value={dispatchAssunto}
+                  onChange={(e) => setDispatchAssunto(e.target.value)}
+                  placeholder="Release / pauta"
+                />
+              </label>
+              <label className="span-2">
+                Texto
+                <textarea
+                  value={dispatchTexto}
+                  onChange={(e) => setDispatchTexto(e.target.value)}
+                  rows={5}
+                  placeholder="Corpo do material para imprensa"
+                />
+              </label>
+              <label>
+                Link opcional
+                <input
+                  value={dispatchLink}
+                  onChange={(e) => setDispatchLink(e.target.value)}
+                  placeholder="https://"
+                />
+              </label>
+              <label>
+                Instância Evolution
+                <input
+                  value={dispatchInstancia}
+                  onChange={(e) => setDispatchInstancia(e.target.value)}
+                  placeholder="Agente"
+                />
+              </label>
+              <label>
+                Canal
+                <select
+                  value={dispatchCanal}
+                  onChange={(e) => setDispatchCanal(e.target.value as typeof dispatchCanal)}
+                >
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="email">E-mail</option>
+                  <option value="ambos">Ambos</option>
+                </select>
+              </label>
+              <label>
+                Modo
+                <select
+                  value={dispatchModo}
+                  onChange={(e) => setDispatchModo(e.target.value as typeof dispatchModo)}
+                >
+                  <option value="simulacao">Simulação (só registra)</option>
+                  <option value="enviar">Enviar de verdade</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="dispatch-preview">
+              <strong>
+                {dispatchPreview.total} selecionados · {dispatchPreview.withPhone} com telefone ·{" "}
+                {dispatchPreview.withEmail} com e-mail
+              </strong>
+              <div className="dispatch-list">
+                {list.map((v) => (
+                  <label key={v.id} className="dispatch-row">
+                    <input
+                      type="checkbox"
+                      checked={dispatchIds.includes(v.id)}
+                      onChange={() => toggleDispatchId(v.id)}
+                    />
+                    <span className="rank">#{v.rank}</span>
+                    <span className="name">{v.name}</span>
+                    <span className="hint">
+                      {v.phone ? "tel" : "—"}
+                      {" · "}
+                      {v.email ? "mail" : "—"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {dispatchResult && <p className="dispatch-result">{dispatchResult}</p>}
+
+            <footer className="drawer-foot">
+              <button
+                type="button"
+                className="btn"
+                disabled={
+                  dispatchBusy ||
+                  !dispatchAssunto.trim() ||
+                  !dispatchTexto.trim() ||
+                  !dispatchIds.length
+                }
+                onClick={runDispatch}
+              >
+                {dispatchBusy
+                  ? "Processando…"
+                  : dispatchModo === "enviar"
+                    ? "Enviar agora"
+                    : "Simular disparo"}
+              </button>
+            </footer>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

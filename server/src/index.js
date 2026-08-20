@@ -286,6 +286,125 @@ app.post("/api/enrich/run", async (req, res) => {
   }
 });
 
+const N8N_DISPATCH_WEBHOOK = process.env.N8N_DISPATCH_WEBHOOK || "";
+const DISPATCH_DEFAULT_INSTANCE = process.env.DISPATCH_INSTANCE || "Agente";
+
+function cleanPhone(p) {
+  if (!p) return null;
+  let d = String(p).replace(/\D/g, "");
+  if (!d) return null;
+  if (d.startsWith("55") && d.length >= 12) return d;
+  if (d.length >= 10 && d.length <= 11) return "55" + d;
+  return d.length >= 12 ? d : null;
+}
+
+app.post("/api/dispatch", async (req, res) => {
+  try {
+    const uf = String(req.body?.uf || "").toUpperCase();
+    const type = String(req.body?.tipo || req.body?.type || "");
+    const assunto = String(req.body?.assunto || "").trim();
+    const texto = String(req.body?.texto || "").trim();
+    const link = String(req.body?.link || "").trim();
+    const canal = String(req.body?.canal || "whatsapp");
+    const modo = String(req.body?.modo || "simulacao");
+    const instancia = String(req.body?.instancia || DISPATCH_DEFAULT_INSTANCE).trim();
+    const ids = Array.isArray(req.body?.vehicleIds) ? req.body.vehicleIds.map(String) : null;
+
+    if (!uf || !type) return res.status(400).json({ error: "uf e tipo são obrigatórios" });
+    if (!assunto || !texto) return res.status(400).json({ error: "assunto e texto são obrigatórios" });
+    if (!["whatsapp", "email", "ambos"].includes(canal)) {
+      return res.status(400).json({ error: "canal inválido" });
+    }
+    if (!["simulacao", "enviar"].includes(modo)) {
+      return res.status(400).json({ error: "modo inválido" });
+    }
+    if (!N8N_DISPATCH_WEBHOOK) {
+      return res.status(503).json({ error: "N8N_DISPATCH_WEBHOOK não configurado" });
+    }
+
+    let rows;
+    if (ids?.length) {
+      const { rows: r } = await pool.query(
+        `SELECT id, name, phone, email, score, instagram_followers
+         FROM vehicles WHERE uf = $1 AND type = $2 AND id = ANY($3::text[])
+         ORDER BY score DESC NULLS LAST`,
+        [uf, type, ids]
+      );
+      rows = r;
+    } else {
+      const { rows: r } = await pool.query(
+        `SELECT id, name, phone, email, score, instagram_followers
+         FROM vehicles WHERE uf = $1 AND type = $2
+         ORDER BY score DESC, instagram_followers DESC NULLS LAST, name ASC
+         LIMIT 20`,
+        [uf, type]
+      );
+      rows = r;
+    }
+
+    const destinos = rows.map((v, i) => ({
+      id: v.id,
+      veiculo: v.name,
+      phone: cleanPhone(v.phone),
+      email: v.email || null,
+      rank: i + 1,
+      followers: v.instagram_followers != null ? Number(v.instagram_followers) : null,
+    }));
+
+    const reachable = destinos.filter((d) => {
+      if (canal === "whatsapp") return Boolean(d.phone);
+      if (canal === "email") return Boolean(d.email);
+      return Boolean(d.phone || d.email);
+    });
+
+    const payload = {
+      uf,
+      tipo: type,
+      assunto,
+      texto,
+      link,
+      canal,
+      modo,
+      instancia,
+      destinos,
+    };
+
+    const n8nRes = await fetch(N8N_DISPATCH_WEBHOOK, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const rawText = await n8nRes.text();
+    let n8nJson = null;
+    try {
+      n8nJson = JSON.parse(rawText);
+    } catch {
+      n8nJson = { raw: rawText };
+    }
+
+    if (!n8nRes.ok) {
+      return res.status(502).json({
+        error: "falha no webhook n8n",
+        status: n8nRes.status,
+        detail: n8nJson,
+      });
+    }
+
+    res.json({
+      ok: true,
+      modo,
+      uf,
+      tipo: type,
+      totalVeiculos: destinos.length,
+      comContato: reachable.length,
+      semContato: destinos.length - reachable.length,
+      n8n: n8nJson,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
 const publicCandidates = [path.join(root, "public"), path.join(root, "web", "dist")];
 const publicDir = publicCandidates.find((p) => fs.existsSync(p));
 if (publicDir) {
