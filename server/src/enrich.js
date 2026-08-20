@@ -422,6 +422,9 @@ async function updateVehicle(pool, row, patch) {
     editorial_rank: row.editorial_rank,
     editorial_band: row.editorial_band,
     editorial_confidence: row.editorial_confidence,
+    desk_followers: row.desk_followers,
+    desk_score_final: row.desk_score_final,
+    desk_coverage: row.desk_coverage,
     last_enriched_at: new Date().toISOString(),
   };
   const scored = computeScore(merged);

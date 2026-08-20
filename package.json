@@ -6,6 +6,7 @@
     "extract": "node scripts/extract-v1.mjs",
     "score": "node scripts/score-v0.mjs",
     "import:editorial": "python scripts/import-editorial-ranking.py",
+    "import:desk": "python scripts/import-desk-score.py",
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build"
   }

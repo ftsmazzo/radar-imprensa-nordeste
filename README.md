@@ -48,10 +48,12 @@ node scripts/score-v0.mjs
 - [x] API + Postgres
 - [x] Deploy Easypanel
 - [x] Ranking editorial humano (Top 20 não-TV por estado)
+- [x] Desk research quantitativo (score 0–100 + métricas)
 - [ ] Enrichment Apify em escala (parcial — pipeline pronto)
 - [ ] Automação n8n (e-mail / WhatsApp) em produção
 
 ## Ranking editorial
 
-Levantamento em `Imprensa/ranking_imprensa_nordeste_2026.xlsx` → `npm run import:editorial` → `data/editorial-ranking-v1.json`.  
+Levantamento em `Imprensa/ranking_imprensa_nordeste_2026.xlsx` → `npm run import:editorial`.  
+Excel enriquecido → `npm run import:desk` → `data/desk-score-v1.json`.  
 Detalhes: [docs/EDITORIAL.md](docs/EDITORIAL.md).

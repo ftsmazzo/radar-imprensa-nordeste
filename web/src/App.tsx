@@ -43,6 +43,16 @@ type Vehicle = {
   editorialBand?: string | null;
   editorialConfidence?: string | null;
   editorialJustification?: string | null;
+  deskFollowers?: number | null;
+  deskReachValue?: number | null;
+  deskReachUnit?: string | null;
+  deskMetricSource?: string | null;
+  deskSourceType?: string | null;
+  deskEvidenceQuality?: number | null;
+  deskObservation?: string | null;
+  deskScoreFinal?: number | null;
+  deskCoverage?: string | null;
+  quantitativeRank?: number | null;
 };
 
 type Meta = {
@@ -56,12 +66,15 @@ type Meta = {
   verified?: number;
   enriched?: number;
   editorial?: number;
+  deskScored?: number;
+  deskFollowers?: number;
+  deskReach?: number;
   maxFollowers?: number;
   apifyConfigured?: boolean;
 };
 
 type ContactFilter = "todos" | "telefone" | "email" | "qualquer" | "ambos";
-type RankingMode = "categoria" | "editorial";
+type RankingMode = "categoria" | "editorial" | "quantitativo";
 
 const UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
 const TYPES = ["TV", "Rádio", "Jornal", "Portal", "Blog"] as const;
@@ -100,7 +113,7 @@ export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [uf, setUf] = useState("PE");
   const [type, setType] = useState("Portal");
-  const [mode, setMode] = useState<RankingMode>("editorial");
+  const [mode, setMode] = useState<RankingMode>("quantitativo");
   const [q, setQ] = useState("");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("todos");
   const [selected, setSelected] = useState<Vehicle | null>(null);
@@ -131,7 +144,9 @@ export default function App() {
     const url =
       mode === "editorial"
         ? `/api/top20/editorial?uf=${encodeURIComponent(uf)}`
-        : `/api/top20?${new URLSearchParams({ uf, type })}`;
+        : mode === "quantitativo"
+          ? `/api/top20/quantitative?uf=${encodeURIComponent(uf)}`
+          : `/api/top20?${new URLSearchParams({ uf, type })}`;
     return fetch(url)
       .then(async (r) => {
         if (!r.ok) throw new Error(await r.text());
@@ -277,18 +292,17 @@ export default function App() {
 
   const exportCsv = () => {
     const header = [
-      "rank", "name", "type", "city", "band", "editorialConfidence", "followers", "following",
-      "posts", "engagement", "avgLikes", "verified", "email", "phone", "instagram", "website",
-      "bio", "justification", "score",
+      "rank", "name", "type", "city", "band", "coverage", "deskScore", "quantitativeRank",
+      "editorialRank", "followers", "deskFollowers", "deskReach", "deskReachUnit",
+      "email", "phone", "instagram", "website", "score",
     ];
     const rows = filtered.map((v) =>
       [
-        v.rank, v.name, v.type, v.city, v.editorialBand ?? "", v.editorialConfidence ?? "",
-        v.instagramFollowers ?? "", v.igFollowing ?? "", v.igPostsCount ?? "",
-        v.igEngagementRate ?? "", v.igAvgLikes ?? "", v.igVerified ? "sim" : "",
-        v.email ?? "", v.phone ?? "", v.instagram ?? "", v.website ?? "",
-        (v.igBiography ?? "").replaceAll("\n", " "),
-        (v.editorialJustification ?? "").replaceAll("\n", " "), v.score,
+        v.rank, v.name, v.type, v.city, v.editorialBand ?? "", v.deskCoverage ?? "",
+        v.deskScoreFinal ?? "", v.quantitativeRank ?? "", v.editorialRank ?? "",
+        v.instagramFollowers ?? "", v.deskFollowers ?? "", v.deskReachValue ?? "",
+        v.deskReachUnit ?? "", v.email ?? "", v.phone ?? "", v.instagram ?? "",
+        v.website ?? "", v.score,
       ]
         .map((c) => `"${String(c).replaceAll('"', '""')}"`)
         .join(",")
@@ -296,7 +310,7 @@ export default function App() {
     const blob = new Blob([[header.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `top20-${uf}-${mode === "editorial" ? "editorial" : type}.csv`;
+    a.download = `top20-${uf}-${mode === "categoria" ? type : mode}.csv`;
     a.click();
   };
 
@@ -318,6 +332,10 @@ export default function App() {
             <div className="kpi">
               <span>Editorial</span>
               <strong>{(meta.editorial ?? 0).toLocaleString("pt-BR")}</strong>
+            </div>
+            <div className="kpi">
+              <span>Desk score</span>
+              <strong>{(meta.deskScored ?? 0).toLocaleString("pt-BR")}</strong>
             </div>
             <div className="kpi">
               <span>Com telefone</span>
@@ -351,6 +369,15 @@ export default function App() {
           </select>
         </label>
         <div className="type-tabs" role="tablist" aria-label="Modo de ranking">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "quantitativo"}
+            className={mode === "quantitativo" ? "tab on" : "tab"}
+            onClick={() => setMode("quantitativo")}
+          >
+            Quantitativo
+          </button>
           <button
             type="button"
             role="tab"
@@ -428,7 +455,11 @@ export default function App() {
           <div className="panel-title">
             <h1>
               Top 20 · {STATE_NAME[uf]}
-              {mode === "editorial" ? " · Editorial" : ` · ${type}`}
+              {mode === "editorial"
+                ? " · Editorial"
+                : mode === "quantitativo"
+                  ? " · Quantitativo"
+                  : ` · ${type}`}
             </h1>
             <div className="panel-meta">
               <span>
@@ -466,8 +497,9 @@ export default function App() {
                     <strong>{v.name}</strong>
                     <em>
                       {v.city}
-                      {mode === "editorial" ? ` · ${v.type}` : ""}
+                      {mode !== "categoria" ? ` · ${v.type}` : ""}
                       {v.editorialBand ? ` · Faixa ${v.editorialBand}` : ""}
+                      {v.deskCoverage ? ` · ${v.deskCoverage}` : ""}
                       {v.igCategory ? ` · ${v.igCategory}` : ""}
                     </em>
                     <div className="metrics">
@@ -554,6 +586,39 @@ export default function App() {
                   <p>{selected.editorialJustification}</p>
                   {selected.editorialConfidence && (
                     <small>Confiança do levantamento: {selected.editorialConfidence}</small>
+                  )}
+                </div>
+              )}
+
+              {(selected.deskScoreFinal != null || selected.deskObservation) && (
+                <div className="bio editorial">
+                  <h3>Desk research quantitativo</h3>
+                  <p>
+                    Score final {selected.deskScoreFinal?.toFixed(1) ?? "—"}/100
+                    {selected.deskCoverage ? ` · cobertura ${selected.deskCoverage}` : ""}
+                    {selected.quantitativeRank != null ? ` · rank Q#${selected.quantitativeRank}` : ""}
+                    {selected.editorialRank != null ? ` · editorial #${selected.editorialRank}` : ""}
+                  </p>
+                  {(selected.deskFollowers != null || selected.deskReachValue != null) && (
+                    <p>
+                      {selected.deskFollowers != null ? `IG desk ${fmt(selected.deskFollowers)}` : ""}
+                      {selected.deskFollowers != null && selected.deskReachValue != null ? " · " : ""}
+                      {selected.deskReachValue != null
+                        ? `Alcance ${fmt(selected.deskReachValue)}${selected.deskReachUnit ? ` (${selected.deskReachUnit})` : ""}`
+                        : ""}
+                    </p>
+                  )}
+                  {selected.deskObservation && <p>{selected.deskObservation}</p>}
+                  {selected.deskMetricSource && (
+                    <small>
+                      Fonte:{" "}
+                      <a href={selected.deskMetricSource} target="_blank" rel="noreferrer">
+                        {selected.deskSourceType || "métrica"}
+                      </a>
+                      {selected.deskEvidenceQuality != null
+                        ? ` · evidência ${selected.deskEvidenceQuality}/10`
+                        : ""}
+                    </small>
                   )}
                 </div>
               )}
@@ -661,7 +726,13 @@ export default function App() {
                 <p className="eyebrow">Automação</p>
                 <h2 id="dispatch-title">Disparo Top 20</h2>
                 <p className="drawer-sub">
-                  {STATE_NAME[uf]} · {mode === "editorial" ? "Editorial (misto)" : type} · webhook n8n
+                  {STATE_NAME[uf]} ·{" "}
+                  {mode === "editorial"
+                    ? "Editorial (misto)"
+                    : mode === "quantitativo"
+                      ? "Quantitativo (desk)"
+                      : type}{" "}
+                  · webhook n8n
                 </p>
               </div>
               <button type="button" className="btn ghost" onClick={() => setDispatchOpen(false)} disabled={dispatchBusy}>

@@ -79,10 +79,26 @@ async function migrate() {
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_confidence TEXT;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_justification TEXT;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_sources JSONB;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_followers BIGINT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_reach_value DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_reach_unit TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_metric_source TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_source_type TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_evidence_quality DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_observation TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_score_editorial DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_score_digital DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_score_reach DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_score_evidence DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_score_final DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_coverage TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS quantitative_rank SMALLINT;
     CREATE INDEX IF NOT EXISTS vehicles_uf_type_score_idx ON vehicles (uf, type, score DESC);
     CREATE INDEX IF NOT EXISTS vehicles_enriched_idx ON vehicles (last_enriched_at NULLS FIRST);
     CREATE INDEX IF NOT EXISTS vehicles_editorial_rank_idx ON vehicles (uf, editorial_rank)
       WHERE editorial_rank IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS vehicles_quantitative_rank_idx ON vehicles (uf, quantitative_rank)
+      WHERE quantitative_rank IS NOT NULL;
   `);
 }
 
@@ -203,6 +219,127 @@ async function applyEditorialRanking() {
   }
 }
 
+async function applyDeskScore() {
+  const deskPath = path.join(root, "data", "desk-score-v1.json");
+  if (!fs.existsSync(deskPath)) {
+    console.log("Desk score file missing — skip");
+    return;
+  }
+
+  const pack = JSON.parse(fs.readFileSync(deskPath, "utf8"));
+  const items = Array.isArray(pack.items) ? pack.items : [];
+  if (!items.length) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`
+      UPDATE vehicles SET
+        desk_followers = NULL,
+        desk_reach_value = NULL,
+        desk_reach_unit = NULL,
+        desk_metric_source = NULL,
+        desk_source_type = NULL,
+        desk_evidence_quality = NULL,
+        desk_observation = NULL,
+        desk_score_editorial = NULL,
+        desk_score_digital = NULL,
+        desk_score_reach = NULL,
+        desk_score_evidence = NULL,
+        desk_score_final = NULL,
+        desk_coverage = NULL,
+        quantitative_rank = NULL
+    `);
+
+    const { computeScore } = await import("./score.js");
+    let applied = 0;
+    let followersFilled = 0;
+    for (const item of items) {
+      const { rows } = await client.query(`SELECT * FROM vehicles WHERE id = $1`, [item.vehicleId]);
+      if (!rows[0]) continue;
+      const row = rows[0];
+      const fillFollowers =
+        item.deskFollowers != null && (row.instagram_followers == null || Number(row.instagram_followers) < Number(item.deskFollowers));
+
+      const scored = computeScore({
+        ...row,
+        desk_followers: item.deskFollowers,
+        desk_score_final: item.deskScoreFinal,
+        desk_coverage: item.deskCoverage,
+        quantitative_rank: item.quantitativeRank,
+        instagram_followers: fillFollowers ? item.deskFollowers : row.instagram_followers,
+      });
+
+      await client.query(
+        `UPDATE vehicles SET
+          desk_followers = $2,
+          desk_reach_value = $3,
+          desk_reach_unit = $4,
+          desk_metric_source = $5,
+          desk_source_type = $6,
+          desk_evidence_quality = $7,
+          desk_observation = $8,
+          desk_score_editorial = $9,
+          desk_score_digital = $10,
+          desk_score_reach = $11,
+          desk_score_evidence = $12,
+          desk_score_final = $13,
+          desk_coverage = $14,
+          quantitative_rank = $15,
+          instagram_followers = CASE
+            WHEN $16::boolean THEN COALESCE(GREATEST(instagram_followers, $2), $2)
+            ELSE instagram_followers
+          END,
+          metrics = COALESCE(metrics, '{}'::jsonb) || $17::jsonb,
+          score = $18,
+          confidence = $19,
+          score_version = $20,
+          updated_at = NOW()
+        WHERE id = $1`,
+        [
+          item.vehicleId,
+          item.deskFollowers,
+          item.deskReachValue,
+          item.deskReachUnit,
+          item.deskMetricSource,
+          item.deskSourceType,
+          item.deskEvidenceQuality,
+          item.deskObservation,
+          item.deskScoreEditorial,
+          item.deskScoreDigital,
+          item.deskScoreReach,
+          item.deskScoreEvidence,
+          item.deskScoreFinal,
+          item.deskCoverage,
+          item.quantitativeRank,
+          fillFollowers,
+          JSON.stringify({
+            deskScoreFinal: item.deskScoreFinal,
+            deskCoverage: item.deskCoverage,
+            quantitativeRank: item.quantitativeRank,
+            deskFollowers: item.deskFollowers,
+            deskReachValue: item.deskReachValue,
+            deskReachUnit: item.deskReachUnit,
+            source: pack.version || "desk-score-v1",
+          }),
+          scored.score,
+          scored.confidence,
+          scored.scoreVersion,
+        ]
+      );
+      applied += 1;
+      if (fillFollowers) followersFilled += 1;
+    }
+    await client.query("COMMIT");
+    console.log(`Desk score applied: ${applied}/${items.length} (followers filled/upgraded: ${followersFilled})`);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 function mapVehicle(row, rank = null) {
   const profile = row.ig_profile || {};
   return {
@@ -244,6 +381,20 @@ function mapVehicle(row, rank = null) {
     editorialConfidence: row.editorial_confidence || null,
     editorialJustification: row.editorial_justification || null,
     editorialSources: row.editorial_sources || null,
+    deskFollowers: row.desk_followers != null ? Number(row.desk_followers) : null,
+    deskReachValue: row.desk_reach_value != null ? Number(row.desk_reach_value) : null,
+    deskReachUnit: row.desk_reach_unit || null,
+    deskMetricSource: row.desk_metric_source || null,
+    deskSourceType: row.desk_source_type || null,
+    deskEvidenceQuality: row.desk_evidence_quality != null ? Number(row.desk_evidence_quality) : null,
+    deskObservation: row.desk_observation || null,
+    deskScoreFinal: row.desk_score_final != null ? Number(row.desk_score_final) : null,
+    deskScoreEditorial: row.desk_score_editorial != null ? Number(row.desk_score_editorial) : null,
+    deskScoreDigital: row.desk_score_digital != null ? Number(row.desk_score_digital) : null,
+    deskScoreReach: row.desk_score_reach != null ? Number(row.desk_score_reach) : null,
+    deskScoreEvidence: row.desk_score_evidence != null ? Number(row.desk_score_evidence) : null,
+    deskCoverage: row.desk_coverage || null,
+    quantitativeRank: row.quantitative_rank != null ? Number(row.quantitative_rank) : null,
   };
 }
 
@@ -282,6 +433,9 @@ app.get("/api/meta", async (_req, res) => {
       COUNT(*) FILTER (WHERE ig_verified IS TRUE)::int AS verified,
       COUNT(*) FILTER (WHERE last_enriched_at IS NOT NULL)::int AS enriched,
       COUNT(*) FILTER (WHERE editorial_rank IS NOT NULL)::int AS editorial,
+      COUNT(*) FILTER (WHERE desk_score_final IS NOT NULL)::int AS desk_scored,
+      COUNT(*) FILTER (WHERE desk_followers IS NOT NULL)::int AS desk_followers,
+      COUNT(*) FILTER (WHERE desk_reach_value IS NOT NULL)::int AS desk_reach,
       COALESCE(MAX(instagram_followers), 0)::bigint AS max_followers,
       MAX(score_version) AS score_version,
       MAX(updated_at) AS updated_at,
@@ -300,6 +454,9 @@ app.get("/api/meta", async (_req, res) => {
     verified: r.verified,
     enriched: r.enriched,
     editorial: r.editorial,
+    deskScored: r.desk_scored,
+    deskFollowers: r.desk_followers,
+    deskReach: r.desk_reach,
     maxFollowers: Number(r.max_followers),
     scoreVersion: r.score_version,
     scoredAt: r.updated_at,
@@ -307,11 +464,13 @@ app.get("/api/meta", async (_req, res) => {
     apifyConfigured: Boolean(process.env.APIFY_TOKEN),
     dynamicRanking: true,
     note:
-      r.editorial > 0
-        ? "Ranking editorial humano incorporado (Top 20 não-TV por estado). Score mescla editorial + Apify."
-        : r.with_bio > 0
-          ? "Perfil IG enriquecido (bio, posts, engajamento). Top 20 recalcula ao vivo."
-          : "Rode enrichment rico para preencher bio, posts e engajamento.",
+      r.desk_scored > 0
+        ? "Desk research quantitativo aplicado (seguidores/alcance/evidência). Modos Editorial e Quantitativo disponíveis."
+        : r.editorial > 0
+          ? "Ranking editorial humano incorporado (Top 20 não-TV por estado). Score mescla editorial + Apify."
+          : r.with_bio > 0
+            ? "Perfil IG enriquecido (bio, posts, engajamento). Top 20 recalcula ao vivo."
+            : "Rode enrichment rico para preencher bio, posts e engajamento.",
   });
 });
 
@@ -343,6 +502,21 @@ app.get("/api/top20/editorial", async (req, res) => {
     [uf]
   );
   res.json(rows.map((r) => mapVehicle(r, Number(r.editorial_rank))));
+});
+
+/** Top 20 quantitativo (desk research enriquecido) por estado. */
+app.get("/api/top20/quantitative", async (req, res) => {
+  const uf = String(req.query.uf || "").toUpperCase();
+  if (!uf) return res.status(400).json({ error: "uf is required" });
+
+  const { rows } = await pool.query(
+    `SELECT * FROM vehicles
+     WHERE uf = $1 AND quantitative_rank IS NOT NULL
+     ORDER BY quantitative_rank ASC, desk_score_final DESC NULLS LAST, score DESC, name ASC
+     LIMIT 20`,
+    [uf]
+  );
+  res.json(rows.map((r) => mapVehicle(r, Number(r.quantitative_rank))));
 });
 
 app.get("/api/vehicle/:id", async (req, res) => {
@@ -585,6 +759,7 @@ await waitForDb();
 await migrate();
 await seedIfEmpty();
 await applyEditorialRanking();
+await applyDeskScore();
 
 // Recalcula scores com a fórmula atual (sem custo Apify)
 {
@@ -592,9 +767,10 @@ await applyEditorialRanking();
   const { rows } = await pool.query(
     `SELECT id, completeness, email, phone, instagram, website, website_alive, city, type,
             instagram_followers, ig_engagement_rate, ig_avg_likes, ig_verified, sources,
-            editorial_rank, editorial_band, editorial_confidence, ig_biography
+            editorial_rank, editorial_band, editorial_confidence, ig_biography,
+            desk_followers, desk_score_final, desk_coverage
      FROM vehicles
-     WHERE instagram_followers IS NOT NULL OR editorial_rank IS NOT NULL`
+     WHERE instagram_followers IS NOT NULL OR editorial_rank IS NOT NULL OR desk_score_final IS NOT NULL`
   );
   for (const row of rows) {
     const scored = computeScore(row);
@@ -603,7 +779,7 @@ await applyEditorialRanking();
       [row.id, scored.score, scored.confidence, scored.scoreVersion]
     );
   }
-  console.log(`Rescored ${rows.length} enriched/editorial vehicles`);
+  console.log(`Rescored ${rows.length} enriched/editorial/desk vehicles`);
 }
 
 app.listen(PORT, () => {
