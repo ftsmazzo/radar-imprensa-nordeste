@@ -61,6 +61,19 @@ async function migrate() {
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS instagram_followers BIGINT;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS website_alive BOOLEAN;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS last_enriched_at TIMESTAMPTZ;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_full_name TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_biography TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_following BIGINT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_posts_count BIGINT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_verified BOOLEAN;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_is_business BOOLEAN;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_category TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_profile_pic TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_external_url TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_avg_likes DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_avg_comments DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_engagement_rate DOUBLE PRECISION;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_profile JSONB;
     CREATE INDEX IF NOT EXISTS vehicles_uf_type_score_idx ON vehicles (uf, type, score DESC);
     CREATE INDEX IF NOT EXISTS vehicles_enriched_idx ON vehicles (last_enriched_at NULLS FIRST);
   `);
@@ -74,9 +87,7 @@ async function seedIfEmpty() {
   }
 
   const seedPath = path.join(root, "data", "vehicles-scored-v0.json");
-  if (!fs.existsSync(seedPath)) {
-    throw new Error(`Missing seed file: ${seedPath}`);
-  }
+  if (!fs.existsSync(seedPath)) throw new Error(`Missing seed file: ${seedPath}`);
 
   const vehicles = JSON.parse(fs.readFileSync(seedPath, "utf8"));
   console.log(`Seeding ${vehicles.length} vehicles...`);
@@ -93,22 +104,9 @@ async function seedIfEmpty() {
           $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb
         ) ON CONFLICT (id) DO NOTHING`,
         [
-          v.id,
-          v.name,
-          v.uf,
-          v.state,
-          v.city,
-          v.type,
-          v.phone,
-          v.email,
-          v.website,
-          v.instagram,
-          v.completeness,
-          v.score ?? 0,
-          v.confidence ?? "baixa",
-          v.scoreVersion ?? "v0-provisional",
-          JSON.stringify(v.sources ?? []),
-          JSON.stringify(v.metrics ?? {}),
+          v.id, v.name, v.uf, v.state, v.city, v.type, v.phone, v.email, v.website, v.instagram,
+          v.completeness, v.score ?? 0, v.confidence ?? "baixa", v.scoreVersion ?? "v0-provisional",
+          JSON.stringify(v.sources ?? []), JSON.stringify(v.metrics ?? {}),
         ]
       );
     }
@@ -123,10 +121,12 @@ async function seedIfEmpty() {
 }
 
 function mapVehicle(row, rank = null) {
+  const profile = row.ig_profile || {};
   return {
     rank,
     id: row.id,
     name: row.name,
+    displayName: row.ig_full_name || row.name,
     uf: row.uf,
     state: row.state,
     city: row.city,
@@ -140,6 +140,18 @@ function mapVehicle(row, rank = null) {
     confidence: row.confidence,
     scoreVersion: row.score_version,
     instagramFollowers: row.instagram_followers != null ? Number(row.instagram_followers) : null,
+    igFollowing: row.ig_following != null ? Number(row.ig_following) : null,
+    igPostsCount: row.ig_posts_count != null ? Number(row.ig_posts_count) : null,
+    igVerified: Boolean(row.ig_verified),
+    igIsBusiness: Boolean(row.ig_is_business),
+    igCategory: row.ig_category,
+    igProfilePic: row.ig_profile_pic,
+    igExternalUrl: row.ig_external_url,
+    igBiography: row.ig_biography,
+    igAvgLikes: row.ig_avg_likes != null ? Number(row.ig_avg_likes) : null,
+    igAvgComments: row.ig_avg_comments != null ? Number(row.ig_avg_comments) : null,
+    igEngagementRate: row.ig_engagement_rate != null ? Number(row.ig_engagement_rate) : null,
+    recentPosts: Array.isArray(profile.recentPosts) ? profile.recentPosts.slice(0, 3) : [],
     websiteAlive: row.website_alive,
     lastEnrichedAt: row.last_enriched_at,
     sources: row.sources,
@@ -163,11 +175,7 @@ app.use(express.json({ limit: "2mb" }));
 app.get("/api/health", async (_req, res) => {
   try {
     const { rows } = await pool.query("SELECT COUNT(*)::int AS c FROM vehicles");
-    res.json({
-      ok: true,
-      vehicles: rows[0].c,
-      apifyConfigured: Boolean(process.env.APIFY_TOKEN),
-    });
+    res.json({ ok: true, vehicles: rows[0].c, apifyConfigured: Boolean(process.env.APIFY_TOKEN) });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
@@ -180,58 +188,76 @@ app.get("/api/meta", async (_req, res) => {
       COUNT(DISTINCT uf)::int AS states,
       COUNT(DISTINCT type)::int AS types,
       COUNT(*) FILTER (WHERE instagram_followers IS NOT NULL)::int AS with_followers,
+      COUNT(*) FILTER (WHERE ig_biography IS NOT NULL)::int AS with_bio,
+      COUNT(*) FILTER (WHERE ig_verified IS TRUE)::int AS verified,
       COUNT(*) FILTER (WHERE last_enriched_at IS NOT NULL)::int AS enriched,
+      COALESCE(MAX(instagram_followers), 0)::bigint AS max_followers,
       MAX(score_version) AS score_version,
       MAX(updated_at) AS updated_at,
       MAX(last_enriched_at) AS last_enriched_at
     FROM vehicles
   `);
   const r = rows[0];
-  const dynamic = r.with_followers > 0;
   res.json({
     total: r.total,
     states: r.states,
     types: r.types,
     withFollowers: r.with_followers,
+    withBio: r.with_bio,
+    verified: r.verified,
     enriched: r.enriched,
+    maxFollowers: Number(r.max_followers),
     scoreVersion: r.score_version,
     scoredAt: r.updated_at,
     lastEnrichedAt: r.last_enriched_at,
     apifyConfigured: Boolean(process.env.APIFY_TOKEN),
     dynamicRanking: true,
-    note: dynamic
-      ? "Ranking dinâmico: Top 20 recalcula automaticamente quando o Apify atualiza seguidores no Postgres."
-      : "Ranking ainda provisional. Rode o enrichment Apify para atualizar seguidores e recalcular o Top 20 ao vivo.",
+    note:
+      r.with_bio > 0
+        ? "Perfil IG enriquecido (bio, posts, engajamento). Top 20 recalcula ao vivo."
+        : "Rode enrichment rico para preencher bio, posts e engajamento.",
   });
 });
 
 app.get("/api/top20", async (req, res) => {
   const uf = String(req.query.uf || "").toUpperCase();
   const type = String(req.query.type || "");
-  if (!uf || !type) {
-    return res.status(400).json({ error: "uf and type are required" });
-  }
+  if (!uf || !type) return res.status(400).json({ error: "uf and type are required" });
 
   const { rows } = await pool.query(
     `SELECT * FROM vehicles
      WHERE uf = $1 AND type = $2
-     ORDER BY score DESC, completeness DESC, name ASC
+     ORDER BY score DESC, instagram_followers DESC NULLS LAST, name ASC
      LIMIT 20`,
     [uf, type]
   );
-
   res.json(rows.map((r, i) => mapVehicle(r, i + 1)));
 });
 
-app.get("/api/stats", async (_req, res) => {
-  const { rows } = await pool.query(`
-    SELECT uf, type, COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE instagram_followers IS NOT NULL)::int AS with_followers
-    FROM vehicles
-    GROUP BY uf, type
-    ORDER BY uf, type
-  `);
-  res.json(rows);
+app.get("/api/vehicle/:id", async (req, res) => {
+  const { rows } = await pool.query(`SELECT * FROM vehicles WHERE id = $1`, [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: "not found" });
+  res.json(mapVehicle(rows[0]));
+});
+
+app.get("/api/stats", async (req, res) => {
+  const uf = req.query.uf ? String(req.query.uf).toUpperCase() : null;
+  const params = [];
+  let where = "";
+  if (uf) {
+    params.push(uf);
+    where = `WHERE uf = $1`;
+  }
+  const { rows } = await pool.query(
+    `SELECT type,
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE instagram_followers IS NOT NULL)::int AS with_followers,
+      COALESCE(MAX(instagram_followers),0)::bigint AS max_followers
+     FROM vehicles ${where}
+     GROUP BY type ORDER BY type`,
+    params
+  );
+  res.json(rows.map((r) => ({ ...r, max_followers: Number(r.max_followers) })));
 });
 
 app.get("/api/enrich/status", async (req, res) => {
@@ -241,10 +267,7 @@ app.get("/api/enrich/status", async (req, res) => {
     if (!job) return res.status(404).json({ error: "job não encontrado" });
     return res.json(job);
   }
-  res.json({
-    apifyConfigured: Boolean(process.env.APIFY_TOKEN),
-    jobs: listJobs().slice(0, 10),
-  });
+  res.json({ apifyConfigured: Boolean(process.env.APIFY_TOKEN), jobs: listJobs().slice(0, 10) });
 });
 
 app.post("/api/enrich/run", async (req, res) => {
@@ -252,8 +275,10 @@ app.post("/api/enrich/run", async (req, res) => {
   try {
     const job = await startEnrichment(pool, {
       uf: req.body?.uf,
+      type: req.body?.type,
       limit: req.body?.limit,
-      mode: req.body?.mode || "full",
+      mode: req.body?.mode || "instagram",
+      force: Boolean(req.body?.force),
     });
     res.status(202).json(job);
   } catch (err) {
