@@ -134,43 +134,38 @@ export async function scrapeWebsiteContacts(website) {
   };
 }
 
-/** Google Places (opcional — GOOGLE_PLACES_API_KEY) */
+/** Google Places API (New) — Text Search */
 export async function lookupGooglePlaces(row) {
   if (!GOOGLE_PLACES_API_KEY) return null;
-  const query = `${row.name} ${row.city || ""} ${row.state || row.uf || ""}`.trim();
-  const findUrl =
-    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?" +
-    new URLSearchParams({
-      input: query,
-      inputtype: "textquery",
-      fields: "place_id,name",
-      language: "pt-BR",
-      key: GOOGLE_PLACES_API_KEY,
-    });
-
-  const findRes = await fetch(findUrl);
-  if (!findRes.ok) return null;
-  const findJson = await findRes.json();
-  const candidate = findJson?.candidates?.[0];
-  if (!candidate?.place_id) return null;
-
-  const detailUrl =
-    "https://maps.googleapis.com/maps/api/place/details/json?" +
-    new URLSearchParams({
-      place_id: candidate.place_id,
-      fields: "formatted_phone_number,international_phone_number,website,name",
-      language: "pt-BR",
-      key: GOOGLE_PLACES_API_KEY,
-    });
-  const detRes = await fetch(detailUrl);
-  if (!detRes.ok) return null;
-  const det = (await detRes.json())?.result || {};
-  const phoneRaw = det.international_phone_number || det.formatted_phone_number || null;
+  const query = `${row.name} ${row.type || ""} ${row.city || ""} ${row.state || row.uf || ""} Brasil`.trim();
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+      "X-Goog-FieldMask":
+        "places.id,places.displayName,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri",
+    },
+    body: JSON.stringify({
+      textQuery: query,
+      languageCode: "pt-BR",
+      regionCode: "BR",
+      maxResultCount: 3,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Places ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const json = await res.json();
+  const place = json?.places?.[0];
+  if (!place) return null;
+  const phoneRaw = place.internationalPhoneNumber || place.nationalPhoneNumber || null;
   const phones = extractPhonesFromText(phoneRaw || "");
   return {
     phone: phones[0] || null,
-    website: det.website || null,
-    placeName: det.name || candidate.name || null,
+    website: place.websiteUri || null,
+    placeName: place.displayName?.text || null,
   };
 }
 
