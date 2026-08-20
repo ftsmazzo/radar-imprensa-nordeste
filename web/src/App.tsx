@@ -199,18 +199,22 @@ export default function App() {
     );
   }, [list, q]);
 
-  const runEnrich = async () => {
+  const runEnrich = async (mode = "instagram") => {
     setEnriching(true);
-    setEnrichMsg("Buscando perfis ricos no Apify…");
+    setEnrichMsg(
+      mode === "contacts"
+        ? "Buscando e-mail/telefone em bio e sites…"
+        : "Buscando perfis ricos no Apify…"
+    );
     try {
       const res = await fetch("/api/enrich/run", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ uf, type, limit: 25, mode: "instagram", force: false }),
+        body: JSON.stringify({ uf, type, limit: 25, mode, force: mode === "contacts" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
-      setEnrichMsg(`Job ${data.id}: ${data.total} perfis na fila…`);
+      setEnrichMsg(`Job ${data.id}: ${data.total} na fila…`);
       const poll = setInterval(async () => {
         const st = await fetch(`/api/enrich/status?id=${data.id}`).then((r) => r.json());
         if (st.status === "done" || st.status === "error") {
@@ -218,7 +222,7 @@ export default function App() {
           setEnriching(false);
           setEnrichMsg(
             st.status === "done"
-              ? `${st.updated} perfis atualizados com bio/engajamento.`
+              ? `${st.updated} atualizados (${mode}).`
               : `Erro: ${JSON.stringify(st.errors?.[0] || st)}`
           );
           loadMeta();
@@ -320,7 +324,10 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={() => setDispatchOpen(true)} disabled={!list.length}>
             Disparo
           </button>
-          <button type="button" className="btn" onClick={runEnrich} disabled={enriching}>
+          <button type="button" className="btn ghost" onClick={() => runEnrich("contacts")} disabled={enriching}>
+            Contatos
+          </button>
+          <button type="button" className="btn" onClick={() => runEnrich("instagram")} disabled={enriching}>
             {enriching ? "Enriquecendo…" : `Apify ${uf}`}
           </button>
         </div>

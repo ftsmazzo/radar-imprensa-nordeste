@@ -2,9 +2,14 @@ import { computeScore, instagramHandle } from "./score.js";
 
 const APIFY_TOKEN = process.env.APIFY_TOKEN || "";
 const IG_ACTOR = process.env.APIFY_IG_ACTOR || "apify/instagram-profile-scraper";
+const CONTACT_ACTOR = process.env.APIFY_CONTACT_ACTOR || "";
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || "";
 const DEFAULT_BATCH = Number(process.env.ENRICH_BATCH_SIZE || 25);
 
 const jobs = new Map();
+
+const JUNK_EMAIL =
+  /noreply|no-reply|donotreply|example\.|sentry\.|wixpress|cloudflare|schema\.org|w3\.org|github\.com|google(mail)?\.com$/i;
 
 export function getJob(id) {
   return jobs.get(id) || null;
@@ -12,6 +17,29 @@ export function getJob(id) {
 
 export function listJobs() {
   return [...jobs.values()].sort((a, b) => (b.startedAt || "").localeCompare(a.startedAt || ""));
+}
+
+export function extractEmailsFromText(text) {
+  if (!text) return [];
+  const found = String(text).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [];
+  const uniq = [...new Set(found.map((e) => e.toLowerCase()))];
+  return uniq.filter((e) => !JUNK_EMAIL.test(e) && !e.endsWith(".png") && !e.endsWith(".jpg"));
+}
+
+export function extractPhonesFromText(text) {
+  if (!text) return [];
+  const found = String(text).match(/(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?\d{4,5}[-\s.]?\d{4}/g) || [];
+  const cleaned = [];
+  for (const raw of found) {
+    let d = raw.replace(/\D/g, "");
+    if (d.length < 10) continue;
+    if (d.startsWith("55") && d.length >= 12) {
+      cleaned.push(d);
+      continue;
+    }
+    if (d.length >= 10 && d.length <= 11) cleaned.push(`55${d}`);
+  }
+  return [...new Set(cleaned)];
 }
 
 async function checkWebsiteAlive(url) {
@@ -43,6 +71,109 @@ async function checkWebsiteAlive(url) {
   }
 }
 
+async function fetchHtml(url) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (compatible; RadarImprensaBot/1.0; +https://radar-imprensa-web.kxryyk.easypanel.host)",
+        accept: "text/html,application/xhtml+xml",
+      },
+    });
+    if (!res.ok) return null;
+    const ctype = res.headers.get("content-type") || "";
+    if (ctype && !/html|text|xml/i.test(ctype)) return null;
+    return await res.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function contactPaths(baseUrl) {
+  const paths = ["", "/contato", "/contact", "/fale-conosco", "/faleconosco", "/about", "/sobre"];
+  try {
+    const u = new URL(baseUrl);
+    return paths.map((p) => {
+      if (!p) return `${u.origin}/`;
+      return new URL(p, u.origin).toString();
+    });
+  } catch {
+    return [baseUrl];
+  }
+}
+
+/** Scrape leve do site (home + páginas de contato) */
+export async function scrapeWebsiteContacts(website) {
+  if (!website) return { emails: [], phones: [], pages: 0, alive: null };
+  const urls = contactPaths(website.startsWith("http") ? website : `https://${website}`);
+  const emails = new Set();
+  const phones = new Set();
+  let pages = 0;
+
+  for (const url of urls) {
+    const html = await fetchHtml(url);
+    if (!html) continue;
+    pages += 1;
+    for (const e of extractEmailsFromText(html)) emails.add(e);
+    for (const p of extractPhonesFromText(html)) phones.add(p);
+    if (emails.size && phones.size) break;
+  }
+
+  return {
+    emails: [...emails],
+    phones: [...phones],
+    pages,
+    alive: pages > 0,
+  };
+}
+
+/** Google Places (opcional — GOOGLE_PLACES_API_KEY) */
+export async function lookupGooglePlaces(row) {
+  if (!GOOGLE_PLACES_API_KEY) return null;
+  const query = `${row.name} ${row.city || ""} ${row.state || row.uf || ""}`.trim();
+  const findUrl =
+    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?" +
+    new URLSearchParams({
+      input: query,
+      inputtype: "textquery",
+      fields: "place_id,name",
+      language: "pt-BR",
+      key: GOOGLE_PLACES_API_KEY,
+    });
+
+  const findRes = await fetch(findUrl);
+  if (!findRes.ok) return null;
+  const findJson = await findRes.json();
+  const candidate = findJson?.candidates?.[0];
+  if (!candidate?.place_id) return null;
+
+  const detailUrl =
+    "https://maps.googleapis.com/maps/api/place/details/json?" +
+    new URLSearchParams({
+      place_id: candidate.place_id,
+      fields: "formatted_phone_number,international_phone_number,website,name",
+      language: "pt-BR",
+      key: GOOGLE_PLACES_API_KEY,
+    });
+  const detRes = await fetch(detailUrl);
+  if (!detRes.ok) return null;
+  const det = (await detRes.json())?.result || {};
+  const phoneRaw = det.international_phone_number || det.formatted_phone_number || null;
+  const phones = extractPhonesFromText(phoneRaw || "");
+  return {
+    phone: phones[0] || null,
+    website: det.website || null,
+    placeName: det.name || candidate.name || null,
+  };
+}
+
 async function runApifyProfiles(usernames) {
   if (!APIFY_TOKEN) throw new Error("APIFY_TOKEN não configurado no serviço");
   if (!usernames.length) return [];
@@ -67,6 +198,29 @@ async function runApifyProfiles(usernames) {
   return res.json();
 }
 
+async function runApifyContactActor(urls) {
+  if (!APIFY_TOKEN || !CONTACT_ACTOR || !urls.length) return [];
+  const actorId = encodeURIComponent(CONTACT_ACTOR);
+  const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=300`;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      urls,
+      startUrls: urls.map((u) => ({ url: u })),
+      maxPages: 4,
+      followLinks: true,
+      extractEmails: true,
+      extractPhones: true,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Apify contact error ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return res.json();
+}
+
 function pickUsername(item) {
   return String(item?.username || item?.userName || item?.ownerUsername || "")
     .replace(/^@/, "")
@@ -85,7 +239,6 @@ function avg(nums) {
   return Math.round(list.reduce((a, b) => a + b, 0) / list.length);
 }
 
-/** Extrai perfil rico do item bruto do Apify */
 export function parseApifyProfile(item) {
   if (!item || typeof item !== "object") return null;
 
@@ -134,13 +287,9 @@ export function parseApifyProfile(item) {
     (Array.isArray(item.bioLinks) && item.bioLinks[0]?.url) ||
     null;
 
-  const emailsFromBio = [];
-  const phonesFromBio = [];
   const bio = String(item.biography ?? item.bio ?? "");
-  const emailMatch = bio.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi);
-  if (emailMatch) emailsFromBio.push(...emailMatch);
-  const phoneMatch = bio.match(/(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?\d{4,5}[-\s]?\d{4}/g);
-  if (phoneMatch) phonesFromBio.push(...phoneMatch);
+  const emailsFromBio = extractEmailsFromText(bio);
+  const phonesFromBio = extractPhonesFromText(bio);
 
   return {
     username: pickUsername(item) || null,
@@ -172,6 +321,80 @@ export function parseApifyProfile(item) {
   };
 }
 
+function contactsFromStoredBio(row) {
+  const bio = row.ig_biography || "";
+  const profile = row.ig_profile || {};
+  const emails = [
+    ...extractEmailsFromText(bio),
+    ...(Array.isArray(profile.emailsFromBio) ? profile.emailsFromBio : []),
+  ];
+  const phones = [
+    ...extractPhonesFromText(bio),
+    ...(Array.isArray(profile.phonesFromBio) ? profile.phonesFromBio.map(String) : []),
+  ];
+  return {
+    email: emails.find(Boolean) || null,
+    phone: phones.find(Boolean) || null,
+  };
+}
+
+async function enrichContactsForRow(pool, row) {
+  const patch = { source: "contacts" };
+  let found = false;
+
+  if (!row.email || !row.phone) {
+    const fromBio = contactsFromStoredBio(row);
+    if (!row.email && fromBio.email) {
+      patch.email = fromBio.email;
+      found = true;
+    }
+    if (!row.phone && fromBio.phone) {
+      patch.phone = fromBio.phone;
+      found = true;
+    }
+  }
+
+  if ((!row.email && !patch.email) || (!row.phone && !patch.phone)) {
+    if (row.website) {
+      const scraped = await scrapeWebsiteContacts(row.website);
+      if (scraped.alive != null) patch.website_alive = scraped.alive;
+      if (!row.email && !patch.email && scraped.emails[0]) {
+        patch.email = scraped.emails[0];
+        found = true;
+      }
+      if (!row.phone && !patch.phone && scraped.phones[0]) {
+        patch.phone = scraped.phones[0];
+        found = true;
+      }
+    }
+  }
+
+  if ((!row.phone && !patch.phone) || (!row.website && !patch.website)) {
+    try {
+      const places = await lookupGooglePlaces(row);
+      if (places) {
+        if (!row.phone && !patch.phone && places.phone) {
+          patch.phone = places.phone;
+          found = true;
+        }
+        if (!row.website && places.website) {
+          patch.website = places.website;
+          found = true;
+        }
+        patch.source = "contacts+places";
+      }
+    } catch {
+      /* Places opcional */
+    }
+  }
+
+  if (found || patch.website_alive != null) {
+    await updateVehicle(pool, row, patch);
+    return true;
+  }
+  return false;
+}
+
 async function updateVehicle(pool, row, patch) {
   const profile = patch.profile || null;
   const followers = profile?.followers ?? patch.instagram_followers ?? row.instagram_followers;
@@ -186,11 +409,13 @@ async function updateVehicle(pool, row, patch) {
     row.phone ||
     profile?.phonesFromBio?.[0] ||
     null;
+  const website = patch.website || row.website || null;
 
   const merged = {
     ...row,
     email,
     phone,
+    website,
     website_alive: patch.website_alive ?? row.website_alive,
     instagram_followers: followers,
     ig_following: profile?.following ?? row.ig_following,
@@ -205,32 +430,34 @@ async function updateVehicle(pool, row, patch) {
     `UPDATE vehicles SET
       email = COALESCE($2, email),
       phone = COALESCE($3, phone),
-      website_alive = COALESCE($4, website_alive),
-      instagram_followers = COALESCE($5, instagram_followers),
-      ig_full_name = COALESCE($6, ig_full_name),
-      ig_biography = COALESCE($7, ig_biography),
-      ig_following = COALESCE($8, ig_following),
-      ig_posts_count = COALESCE($9, ig_posts_count),
-      ig_verified = COALESCE($10, ig_verified),
-      ig_is_business = COALESCE($11, ig_is_business),
-      ig_category = COALESCE($12, ig_category),
-      ig_profile_pic = COALESCE($13, ig_profile_pic),
-      ig_external_url = COALESCE($14, ig_external_url),
-      ig_avg_likes = COALESCE($15, ig_avg_likes),
-      ig_avg_comments = COALESCE($16, ig_avg_comments),
-      ig_engagement_rate = COALESCE($17, ig_engagement_rate),
-      ig_profile = COALESCE(ig_profile, '{}'::jsonb) || COALESCE($18::jsonb, '{}'::jsonb),
+      website = COALESCE($4, website),
+      website_alive = COALESCE($5, website_alive),
+      instagram_followers = COALESCE($6, instagram_followers),
+      ig_full_name = COALESCE($7, ig_full_name),
+      ig_biography = COALESCE($8, ig_biography),
+      ig_following = COALESCE($9, ig_following),
+      ig_posts_count = COALESCE($10, ig_posts_count),
+      ig_verified = COALESCE($11, ig_verified),
+      ig_is_business = COALESCE($12, ig_is_business),
+      ig_category = COALESCE($13, ig_category),
+      ig_profile_pic = COALESCE($14, ig_profile_pic),
+      ig_external_url = COALESCE($15, ig_external_url),
+      ig_avg_likes = COALESCE($16, ig_avg_likes),
+      ig_avg_comments = COALESCE($17, ig_avg_comments),
+      ig_engagement_rate = COALESCE($18, ig_engagement_rate),
+      ig_profile = COALESCE(ig_profile, '{}'::jsonb) || COALESCE($19::jsonb, '{}'::jsonb),
       last_enriched_at = NOW(),
-      score = $19,
-      confidence = $20,
-      score_version = $21,
-      metrics = COALESCE(metrics, '{}'::jsonb) || $22::jsonb,
+      score = $20,
+      confidence = $21,
+      score_version = $22,
+      metrics = COALESCE(metrics, '{}'::jsonb) || $23::jsonb,
       updated_at = NOW()
     WHERE id = $1`,
     [
       row.id,
       email,
       phone,
+      website,
       patch.website_alive ?? null,
       followers,
       profile?.fullName ?? null,
@@ -264,7 +491,7 @@ async function updateVehicle(pool, row, patch) {
 }
 
 export async function startEnrichment(pool, options = {}) {
-  const jobId = `job_${Date.now()}`;
+  const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const uf = options.uf ? String(options.uf).toUpperCase() : null;
   const type = options.type ? String(options.type) : null;
   const limit = Math.min(Number(options.limit || DEFAULT_BATCH), 100);
@@ -272,35 +499,45 @@ export async function startEnrichment(pool, options = {}) {
   const force = Boolean(options.force);
 
   const params = [];
-  let where = "WHERE instagram IS NOT NULL AND instagram <> ''";
+  const clauses = [];
+
+  if (mode === "contacts") {
+    clauses.push("(email IS NULL OR phone IS NULL)");
+  } else if (mode === "instagram" || mode === "full") {
+    clauses.push("instagram IS NOT NULL AND instagram <> ''");
+  }
+
   if (uf) {
     params.push(uf);
-    where += ` AND uf = $${params.length}`;
+    clauses.push(`uf = $${params.length}`);
   }
   if (type) {
     params.push(type);
-    where += ` AND type = $${params.length}`;
+    clauses.push(`type = $${params.length}`);
   }
 
-  if (!force) {
-    // incomplete profile OR stale
-    where += ` AND (
+  if (!force && mode !== "contacts") {
+    clauses.push(`(
       ig_biography IS NULL
       OR instagram_followers IS NULL
       OR last_enriched_at IS NULL
       OR last_enriched_at < NOW() - INTERVAL '3 days'
-    )`;
+    )`);
   }
 
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   params.push(limit);
-  const { rows } = await pool.query(
-    `SELECT * FROM vehicles
-     ${where}
-     ORDER BY
+
+  const order =
+    mode === "contacts"
+      ? `ORDER BY score DESC, instagram_followers DESC NULLS LAST`
+      : `ORDER BY
        CASE WHEN ig_biography IS NULL THEN 0 ELSE 1 END,
        CASE WHEN instagram_followers IS NULL THEN 0 ELSE 1 END,
-       score DESC
-     LIMIT $${params.length}`,
+       score DESC`;
+
+  const { rows } = await pool.query(
+    `SELECT * FROM vehicles ${where} ${order} LIMIT $${params.length}`,
     params
   );
 
@@ -317,11 +554,60 @@ export async function startEnrichment(pool, options = {}) {
     startedAt: new Date().toISOString(),
     finishedAt: null,
     apifyConfigured: Boolean(APIFY_TOKEN),
+    placesConfigured: Boolean(GOOGLE_PLACES_API_KEY),
   };
   jobs.set(jobId, job);
 
   (async () => {
     try {
+      if (mode === "contacts") {
+        for (const row of rows) {
+          try {
+            const ok = await enrichContactsForRow(pool, row);
+            if (ok) job.updated += 1;
+          } catch (err) {
+            job.errors.push({ id: row.id, error: String(err.message || err) });
+          }
+          job.done += 1;
+        }
+
+        if (CONTACT_ACTOR && APIFY_TOKEN) {
+          const stillMissing = rows.filter((r) => !r.email || !r.phone).slice(0, 15);
+          const withSite = stillMissing.filter((r) => r.website);
+          if (withSite.length) {
+            try {
+              const items = await runApifyContactActor(withSite.map((r) => r.website));
+              for (const item of items || []) {
+                const site = String(item.url || item.domain || item.website || "");
+                const match = withSite.find((r) => {
+                  if (!r.website || !site) return false;
+                  try {
+                    const host = new URL(r.website.startsWith("http") ? r.website : `https://${r.website}`)
+                      .hostname.replace(/^www\./, "");
+                    return site.includes(host);
+                  } catch {
+                    return false;
+                  }
+                });
+                if (!match) continue;
+                const emails = item.emails || item.email || [];
+                const phones = item.phones || item.phone || [];
+                const emailList = Array.isArray(emails) ? emails : [emails];
+                const phoneList = Array.isArray(phones) ? phones : [phones];
+                await updateVehicle(pool, match, {
+                  email: emailList[0] || null,
+                  phone: extractPhonesFromText(String(phoneList[0] || ""))[0] || null,
+                  source: "apify-contact",
+                });
+                job.updated += 1;
+              }
+            } catch (err) {
+              job.errors.push({ error: String(err.message || err) });
+            }
+          }
+        }
+      }
+
       if (mode === "full" || mode === "website") {
         for (const row of rows) {
           try {

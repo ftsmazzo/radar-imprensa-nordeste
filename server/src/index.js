@@ -286,6 +286,60 @@ app.post("/api/enrich/run", async (req, res) => {
   }
 });
 
+app.get("/api/contacts/coverage", async (req, res) => {
+  const uf = req.query.uf ? String(req.query.uf).toUpperCase() : null;
+  const type = req.query.type ? String(req.query.type) : null;
+  const params = [];
+  const clauses = [];
+  if (uf) {
+    params.push(uf);
+    clauses.push(`uf = $${params.length}`);
+  }
+  if (type) {
+    params.push(type);
+    clauses.push(`type = $${params.length}`);
+  }
+
+  // Cobertura do Top 20 por UF×tipo (mesma ordem do ranking)
+  const { rows: sets } = await pool.query(
+    `
+    WITH ranked AS (
+      SELECT uf, type, email, phone,
+             ROW_NUMBER() OVER (
+               PARTITION BY uf, type
+               ORDER BY score DESC, instagram_followers DESC NULLS LAST, name ASC
+             ) AS rn
+      FROM vehicles
+      ${clauses.length ? `WHERE ${clauses.join(" AND ")}` : ""}
+    )
+    SELECT uf, type,
+      COUNT(*)::int AS n,
+      COUNT(*) FILTER (WHERE phone IS NOT NULL)::int AS with_phone,
+      COUNT(*) FILTER (WHERE email IS NOT NULL)::int AS with_email,
+      COUNT(*) FILTER (WHERE phone IS NOT NULL OR email IS NOT NULL)::int AS with_any
+    FROM ranked
+    WHERE rn <= 20
+    GROUP BY uf, type
+    ORDER BY uf, type
+    `,
+    params
+  );
+
+  const total = sets.reduce((a, r) => a + r.n, 0);
+  const withAny = sets.reduce((a, r) => a + r.with_any, 0);
+  res.json({
+    targetPct: 70,
+    overallPct: total ? Math.round((1000 * withAny) / total) / 10 : 0,
+    total,
+    withAny,
+    placesConfigured: Boolean(process.env.GOOGLE_PLACES_API_KEY),
+    sets: sets.map((r) => ({
+      ...r,
+      pct: r.n ? Math.round((1000 * r.with_any) / r.n) / 10 : 0,
+    })),
+  });
+});
+
 const N8N_DISPATCH_WEBHOOK = process.env.N8N_DISPATCH_WEBHOOK || "";
 const DISPATCH_DEFAULT_INSTANCE = process.env.DISPATCH_INSTANCE || "Agente";
 
