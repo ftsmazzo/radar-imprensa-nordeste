@@ -300,6 +300,25 @@ await waitForDb();
 await migrate();
 await seedIfEmpty();
 
+// Recalcula scores com a fórmula atual (sem custo Apify)
+{
+  const { computeScore } = await import("./score.js");
+  const { rows } = await pool.query(
+    `SELECT id, completeness, email, phone, instagram, website, website_alive, city, type,
+            instagram_followers, ig_engagement_rate, ig_avg_likes, ig_verified, sources
+     FROM vehicles
+     WHERE instagram_followers IS NOT NULL`
+  );
+  for (const row of rows) {
+    const scored = computeScore(row);
+    await pool.query(
+      `UPDATE vehicles SET score = $2, confidence = $3, score_version = $4, updated_at = NOW() WHERE id = $1`,
+      [row.id, scored.score, scored.confidence, scored.scoreVersion]
+    );
+  }
+  console.log(`Rescored ${rows.length} enriched vehicles`);
+}
+
 app.listen(PORT, () => {
   console.log(`Radar API listening on :${PORT}`);
 });

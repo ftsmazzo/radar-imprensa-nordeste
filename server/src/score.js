@@ -25,12 +25,13 @@ export function followersScore(followers) {
 
 export function engagementScore(rate, avgLikes) {
   if (rate != null && Number.isFinite(Number(rate))) {
-    return clamp01(Number(rate) / 5); // 5% engajamento ≈ topo
+    // piso 0.25 para não punir páginas grandes (eng. % naturalmente baixo)
+    return clamp01(Math.max(0.25, Number(rate) / 5));
   }
   if (avgLikes != null && Number.isFinite(Number(avgLikes))) {
-    return clamp01(Math.log10(Number(avgLikes) + 1) / 5);
+    return clamp01(Math.max(0.25, Math.log10(Number(avgLikes) + 1) / 5));
   }
-  return 0.35;
+  return 0.45; // neutro quando ainda não há amostra de posts
 }
 
 export function computeScore(v) {
@@ -47,13 +48,14 @@ export function computeScore(v) {
 
   const hasRealMetric = v.instagram_followers != null;
 
+  // Alcance manda; engajamento é ajuste fino (não derruba veículo grande)
   const score = hasRealMetric
-    ? reach * 0.42 +
-      engagement * 0.18 +
-      clamp01(contact) * 0.1 +
-      website * 0.06 +
-      capital * 0.08 +
-      typeBoost * 0.08 +
+    ? reach * 0.55 +
+      engagement * 0.1 +
+      clamp01(contact) * 0.08 +
+      website * 0.05 +
+      capital * 0.07 +
+      typeBoost * 0.07 +
       verifiedBoost * 0.08
     : completeness * 0.2 +
       clamp01(contact) * 0.2 +
