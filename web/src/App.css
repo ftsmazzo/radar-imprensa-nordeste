@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg0: #0f1c1a;
   --bg1: #17302b;
   --sand: #e7dcc8;
@@ -8,6 +9,7 @@
   --accent-2: #2f8f7b;
   --line: rgba(231, 220, 200, 0.16);
   --panel: rgba(20, 40, 36, 0.82);
+  --control-bg: #1a322c;
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Manrope", "Segoe UI", sans-serif;
 }
@@ -113,9 +115,26 @@ a {
   padding: 0.7rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  background-color: var(--control-bg);
   color: var(--ink);
   font: inherit;
+  color-scheme: dark;
+}
+
+.controls select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--sand) 50%),
+    linear-gradient(135deg, var(--sand) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+.controls select option,
+.controls select optgroup {
+  background-color: #17302b;
+  color: #f4efe6;
 }
 
 .btn {
@@ -137,6 +156,20 @@ a {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--sand);
+  border: 1px solid var(--line);
+}
+
+.enrich-msg,
+.top-note {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .panel {

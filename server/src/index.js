@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { getJob, listJobs, startEnrichment } from "./enrich.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -10,6 +11,7 @@ const { Pool } = pg;
 
 const PORT = Number(process.env.PORT || 3000);
 const DATABASE_URL = process.env.DATABASE_URL;
+const ENRICH_TOKEN = process.env.ENRICH_TOKEN || "";
 
 if (!DATABASE_URL) {
   console.error("DATABASE_URL is required");
@@ -26,7 +28,7 @@ async function waitForDb(retries = 30) {
     try {
       await pool.query("select 1");
       return;
-    } catch (err) {
+    } catch {
       console.log(`Waiting for Postgres... (${i + 1}/${retries})`);
       await new Promise((r) => setTimeout(r, 2000));
     }
@@ -56,8 +58,11 @@ async function migrate() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS instagram_followers BIGINT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS website_alive BOOLEAN;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS last_enriched_at TIMESTAMPTZ;
     CREATE INDEX IF NOT EXISTS vehicles_uf_type_score_idx ON vehicles (uf, type, score DESC);
-    CREATE INDEX IF NOT EXISTS vehicles_name_idx ON vehicles USING gin (to_tsvector('portuguese', name));
+    CREATE INDEX IF NOT EXISTS vehicles_enriched_idx ON vehicles (last_enriched_at NULLS FIRST);
   `);
 }
 
@@ -133,9 +138,23 @@ function mapVehicle(row, rank = null) {
     completeness: row.completeness,
     score: Number(row.score),
     confidence: row.confidence,
+    scoreVersion: row.score_version,
+    instagramFollowers: row.instagram_followers != null ? Number(row.instagram_followers) : null,
+    websiteAlive: row.website_alive,
+    lastEnrichedAt: row.last_enriched_at,
     sources: row.sources,
     metrics: row.metrics,
   };
+}
+
+function requireEnrichAuth(req, res) {
+  if (!ENRICH_TOKEN) return true;
+  const header = req.headers["x-enrich-token"] || req.query.token;
+  if (header !== ENRICH_TOKEN) {
+    res.status(401).json({ error: "token inválido" });
+    return false;
+  }
+  return true;
 }
 
 const app = express();
@@ -144,7 +163,11 @@ app.use(express.json({ limit: "2mb" }));
 app.get("/api/health", async (_req, res) => {
   try {
     const { rows } = await pool.query("SELECT COUNT(*)::int AS c FROM vehicles");
-    res.json({ ok: true, vehicles: rows[0].c });
+    res.json({
+      ok: true,
+      vehicles: rows[0].c,
+      apifyConfigured: Boolean(process.env.APIFY_TOKEN),
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
@@ -156,17 +179,29 @@ app.get("/api/meta", async (_req, res) => {
       COUNT(*)::int AS total,
       COUNT(DISTINCT uf)::int AS states,
       COUNT(DISTINCT type)::int AS types,
+      COUNT(*) FILTER (WHERE instagram_followers IS NOT NULL)::int AS with_followers,
+      COUNT(*) FILTER (WHERE last_enriched_at IS NOT NULL)::int AS enriched,
       MAX(score_version) AS score_version,
-      MAX(updated_at) AS updated_at
+      MAX(updated_at) AS updated_at,
+      MAX(last_enriched_at) AS last_enriched_at
     FROM vehicles
   `);
+  const r = rows[0];
+  const dynamic = r.with_followers > 0;
   res.json({
-    total: rows[0].total,
-    states: rows[0].states,
-    types: rows[0].types,
-    scoreVersion: rows[0].score_version,
-    scoredAt: rows[0].updated_at,
-    note: "Score provisional sem métricas reais de audiência/seguidores. Recalibrar após Apify.",
+    total: r.total,
+    states: r.states,
+    types: r.types,
+    withFollowers: r.with_followers,
+    enriched: r.enriched,
+    scoreVersion: r.score_version,
+    scoredAt: r.updated_at,
+    lastEnrichedAt: r.last_enriched_at,
+    apifyConfigured: Boolean(process.env.APIFY_TOKEN),
+    dynamicRanking: true,
+    note: dynamic
+      ? "Ranking dinâmico: Top 20 recalcula automaticamente quando o Apify atualiza seguidores no Postgres."
+      : "Ranking ainda provisional. Rode o enrichment Apify para atualizar seguidores e recalcular o Top 20 ao vivo.",
   });
 });
 
@@ -190,12 +225,40 @@ app.get("/api/top20", async (req, res) => {
 
 app.get("/api/stats", async (_req, res) => {
   const { rows } = await pool.query(`
-    SELECT uf, type, COUNT(*)::int AS total
+    SELECT uf, type, COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE instagram_followers IS NOT NULL)::int AS with_followers
     FROM vehicles
     GROUP BY uf, type
     ORDER BY uf, type
   `);
   res.json(rows);
+});
+
+app.get("/api/enrich/status", async (req, res) => {
+  const id = req.query.id;
+  if (id) {
+    const job = getJob(String(id));
+    if (!job) return res.status(404).json({ error: "job não encontrado" });
+    return res.json(job);
+  }
+  res.json({
+    apifyConfigured: Boolean(process.env.APIFY_TOKEN),
+    jobs: listJobs().slice(0, 10),
+  });
+});
+
+app.post("/api/enrich/run", async (req, res) => {
+  if (!requireEnrichAuth(req, res)) return;
+  try {
+    const job = await startEnrichment(pool, {
+      uf: req.body?.uf,
+      limit: req.body?.limit,
+      mode: req.body?.mode || "full",
+    });
+    res.status(202).json(job);
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
 });
 
 const publicCandidates = [path.join(root, "public"), path.join(root, "web", "dist")];

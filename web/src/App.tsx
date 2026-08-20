@@ -16,6 +16,9 @@ type Vehicle = {
   completeness: string;
   score: number;
   confidence: string;
+  instagramFollowers: number | null;
+  websiteAlive: boolean | null;
+  lastEnrichedAt: string | null;
 };
 
 type Meta = {
@@ -23,6 +26,11 @@ type Meta = {
   scoreVersion: string;
   note: string;
   scoredAt: string;
+  withFollowers?: number;
+  enriched?: number;
+  lastEnrichedAt?: string | null;
+  apifyConfigured?: boolean;
+  dynamicRanking?: boolean;
 };
 
 const UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
@@ -40,11 +48,17 @@ const STATE_NAME: Record<string, string> = {
   SE: "Sergipe",
 };
 
+function formatFollowers(n: number | null) {
+  if (n == null) return null;
+  return n.toLocaleString("pt-BR");
+}
+
 function contactLabel(v: Vehicle) {
   const parts = [];
   if (v.email) parts.push("e-mail");
   if (v.phone) parts.push("telefone");
   if (v.instagram) parts.push("Instagram");
+  if (v.instagramFollowers != null) parts.push(`${formatFollowers(v.instagramFollowers)} seg.`);
   return parts.length ? parts.join(" · ") : "Sem contato";
 }
 
@@ -56,12 +70,16 @@ export default function App() {
   const [q, setQ] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enrichMsg, setEnrichMsg] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadMeta = () =>
     fetch("/api/meta")
       .then((r) => r.json())
       .then(setMeta)
       .catch((e) => setError(String(e)));
+
+  useEffect(() => {
+    loadMeta();
   }, []);
 
   useEffect(() => {
@@ -90,19 +108,80 @@ export default function App() {
   }, [list, q]);
 
   const exportCsv = () => {
-    const header = ["rank", "name", "uf", "city", "type", "score", "email", "phone", "instagram", "website", "confidence"];
+    const header = [
+      "rank",
+      "name",
+      "uf",
+      "city",
+      "type",
+      "score",
+      "followers",
+      "email",
+      "phone",
+      "instagram",
+      "website",
+      "confidence",
+    ];
     const rows = filtered.map((v) =>
-      [v.rank, v.name, v.uf, v.city, v.type, v.score, v.email ?? "", v.phone ?? "", v.instagram ?? "", v.website ?? "", v.confidence]
+      [
+        v.rank,
+        v.name,
+        v.uf,
+        v.city,
+        v.type,
+        v.score,
+        v.instagramFollowers ?? "",
+        v.email ?? "",
+        v.phone ?? "",
+        v.instagram ?? "",
+        v.website ?? "",
+        v.confidence,
+      ]
         .map((c) => `"${String(c).replaceAll('"', '""')}"`)
         .join(",")
     );
-    const blob = new Blob([[header.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([[header.join(","), ...rows].join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `top20-${uf}-${type}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const runEnrichPilot = async () => {
+    setEnrichMsg("Iniciando enrichment…");
+    try {
+      const res = await fetch("/api/enrich/run", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ uf, limit: 20, mode: "full" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setEnrichMsg(
+        `Job ${data.id} rodando (${data.total} veículos de ${uf}). O Top 20 atualiza sozinho quando o score mudar.`
+      );
+      const poll = setInterval(async () => {
+        const st = await fetch(`/api/enrich/status?id=${data.id}`).then((r) => r.json());
+        if (st.status === "done" || st.status === "error") {
+          clearInterval(poll);
+          setEnrichMsg(
+            st.status === "done"
+              ? `Enrichment concluído: ${st.updated} atualizados. Recarregando ranking…`
+              : `Enrichment com erro: ${JSON.stringify(st.errors?.[0] || st)}`
+          );
+          loadMeta();
+          const params = new URLSearchParams({ uf, type });
+          const fresh = await fetch(`/api/top20?${params}`).then((r) => r.json());
+          setList(fresh);
+        }
+      }, 3000);
+    } catch (e) {
+      setEnrichMsg(String(e));
+    }
   };
 
   return (
@@ -112,12 +191,13 @@ export default function App() {
         <p className="brand">Radar Imprensa Nordeste</p>
         <h1>Top 20 por estado</h1>
         <p className="lede">
-          Base no Postgres com ranking provisional. Próximo passo: métricas reais via Apify e disparo automatizado.
+          Ranking dinâmico no Postgres. Enrichment Apify atualiza seguidores e o Top 20 recalcula na hora.
         </p>
         {meta && (
           <p className="meta">
-            {meta.total.toLocaleString("pt-BR")} veículos · score {meta.scoreVersion} · atualizado{" "}
-            {new Date(meta.scoredAt).toLocaleString("pt-BR")}
+            {meta.total.toLocaleString("pt-BR")} veículos · {meta.withFollowers ?? 0} com seguidores · score{" "}
+            {meta.scoreVersion}
+            {meta.apifyConfigured ? " · Apify OK" : " · Apify pendente (token)"}
           </p>
         )}
       </header>
@@ -154,7 +234,13 @@ export default function App() {
         <button type="button" className="btn" onClick={exportCsv} disabled={!filtered.length}>
           Exportar CSV
         </button>
+        <button type="button" className="btn btn-ghost" onClick={runEnrichPilot}>
+          Enrichment {uf}
+        </button>
       </section>
+
+      {enrichMsg && <p className="enrich-msg">{enrichMsg}</p>}
+      {meta && <p className="footnote top-note">{meta.note}</p>}
 
       <section className="panel">
         <div className="panel-head">
@@ -176,6 +262,9 @@ export default function App() {
                   <strong>{v.name}</strong>
                   <span className="sub">
                     {v.city} · score {v.score.toFixed(3)} · confiança {v.confidence}
+                    {v.instagramFollowers != null
+                      ? ` · ${formatFollowers(v.instagramFollowers)} seguidores`
+                      : ""}
                   </span>
                   <span className="sub">{contactLabel(v)}</span>
                 </div>
@@ -196,8 +285,6 @@ export default function App() {
             ))}
           </ol>
         )}
-
-        {meta && <p className="footnote">{meta.note}</p>}
       </section>
 
       <footer className="footer">
@@ -206,7 +293,7 @@ export default function App() {
           Radar v1
         </a>
         {" · "}
-        Fabria IA — v2 no Easypanel
+        Fabria IA — ranking dinâmico
       </footer>
     </div>
   );

@@ -1,35 +1,45 @@
 # Spec Apify — Enrichment Radar Nordeste v2
 
+## Resposta direta: atualização dinâmica?
+
+**Sim.** O Top 20 é calculado ao vivo no Postgres (`ORDER BY score DESC`).  
+Quando o enrichment grava `instagram_followers` e recalcula `score`, a próxima leitura da API já reflete o ranking novo — sem rebuild do front.
+
+Fluxo:
+```
+Apify (IG followers / checks) → UPDATE vehicles → score recalculado → GET /api/top20
+```
+
+Agendamento sugerido: job semanal por UF (Easypanel script / n8n) chamando `POST /api/enrich/run`.
+
+---
+
 ## Objetivo
-Enriquecer `data/vehicles-v1.json` com métricas reais para recalibrar o Top 20.
+Enriquecer veículos com métricas reais e recalibrar o Top 20 automaticamente.
 
-## Inputs
-- `id`, `name`, `uf`, `type`, `website`, `instagram`, `email`, `phone`
+## Env
+| Var | Uso |
+|-----|-----|
+| `APIFY_TOKEN` | Token da conta Apify |
+| `APIFY_IG_ACTOR` | default `apify/instagram-profile-scraper` |
+| `ENRICH_TOKEN` | Protege `POST /api/enrich/run` (opcional) |
+| `ENRICH_BATCH_SIZE` | default 25 |
 
-## Outputs desejados (por veículo)
-| Campo | Fonte sugerida | Uso |
-|-------|----------------|-----|
-| `instagramFollowers` | Perfil IG / Apify IG scraper | Portais, blogs, colunistas |
-| `facebookFollowers` | Página FB | Proxy adicional |
-| `websiteAlive` | HTTP check | Confiança |
-| `emailsFound` | Site crawl / contato | Disparo |
-| `phonesFound` | Site crawl | WhatsApp lead |
-| `whatsappCandidates` | wa.me / texto no site | Fase 2 |
-| `audienceProxy` | Rankings setoriais / Atlas | Rádio/TV |
-| `circulationProxy` | IVC / menções | Jornais |
-| `lastEnrichedAt` | ISO date | Auditoria |
+## Endpoints
+- `POST /api/enrich/run` `{ "uf": "PE", "limit": 20, "mode": "full|website|instagram" }`
+- `GET /api/enrich/status?id=job_...`
+- `GET /api/meta` → `withFollowers`, `dynamicRanking`, `apifyConfigured`
 
-## Actors (rascunho)
-1. **website-contact-crawler** — homepage + /contato  
-2. **instagram-followers** — a partir de URL/handle  
-3. **http-status-check** — websiteAlive  
-4. **manual-seed-sheet** — overrides do cliente (CSV)
+## Outputs por veículo
+| Campo | Fonte |
+|-------|--------|
+| `instagram_followers` | Apify Instagram Profile Scraper |
+| `website_alive` | HTTP check (sem custo Apify) |
+| `score` / `confidence` | recalculados na hora |
+| `last_enriched_at` | auditoria |
 
 ## Regras
-- Não inventar métrica: null + `confidence=baixa`  
-- Rate limit e cache por `id`  
-- Rodar por lote (UF) para controlar custo  
-- Merge em `vehicles-enriched.json` sem sobrescrever contato humano validado
-
-## Próximo passo técnico
-Criar actor mínimo de contato+followers para BA e PE como piloto.
+- Não inventar métrica: null permanece null  
+- Lotes por UF para controlar custo  
+- Re-enriquece se `last_enriched_at` > 7 dias  
+- Ranking sempre dinâmico na API
