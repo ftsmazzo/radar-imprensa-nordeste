@@ -67,8 +67,32 @@ a { color: var(--sand); }
 
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(88px, 1fr));
+  grid-template-columns: repeat(5, minmax(84px, 1fr));
   gap: 0.65rem;
+}
+
+.panel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.panel-meta > span:first-child {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.chip {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sand);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.28rem 0.55rem;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .kpi {
@@ -311,6 +335,8 @@ a { color: var(--sand); }
   font-size: 0.78rem;
 }
 .metrics b { color: var(--ink); font-weight: 700; }
+.metrics .ok { color: var(--teal); }
+.metrics .miss { opacity: 0.55; }
 
 .score-chip {
   font-family: var(--font-display);

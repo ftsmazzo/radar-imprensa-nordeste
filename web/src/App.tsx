@@ -47,11 +47,15 @@ type Meta = {
   note: string;
   withFollowers?: number;
   withBio?: number;
+  withPhone?: number;
+  withEmail?: number;
   verified?: number;
   enriched?: number;
   maxFollowers?: number;
   apifyConfigured?: boolean;
 };
+
+type ContactFilter = "todos" | "telefone" | "email" | "qualquer" | "ambos";
 
 const UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
 const TYPES = ["TV", "Rádio", "Jornal", "Portal", "Blog"] as const;
@@ -91,6 +95,7 @@ export default function App() {
   const [uf, setUf] = useState("PE");
   const [type, setType] = useState("Portal");
   const [q, setQ] = useState("");
+  const [contactFilter, setContactFilter] = useState<ContactFilter>("todos");
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,17 +143,53 @@ export default function App() {
     loadList();
   }, [uf, type]);
 
+  const matchesContact = (v: Vehicle, filter: ContactFilter) => {
+    const hasPhone = Boolean(v.phone);
+    const hasEmail = Boolean(v.email);
+    if (filter === "telefone") return hasPhone;
+    if (filter === "email") return hasEmail;
+    if (filter === "qualquer") return hasPhone || hasEmail;
+    if (filter === "ambos") return hasPhone && hasEmail;
+    return true;
+  };
+
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return list.filter((v) => {
+      if (!matchesContact(v, contactFilter)) return false;
+      if (!query) return true;
+      return (
+        v.name.toLowerCase().includes(query) ||
+        v.displayName?.toLowerCase().includes(query) ||
+        v.city.toLowerCase().includes(query) ||
+        (v.igBiography ?? "").toLowerCase().includes(query)
+      );
+    });
+  }, [list, q, contactFilter]);
+
+  const listContactStats = useMemo(() => {
+    const withPhone = list.filter((v) => v.phone).length;
+    const withEmail = list.filter((v) => v.email).length;
+    const withBoth = list.filter((v) => v.phone && v.email).length;
+    const withAny = list.filter((v) => v.phone || v.email).length;
+    return { withPhone, withEmail, withBoth, withAny, total: list.length };
+  }, [list]);
+
   useEffect(() => {
     if (!dispatchOpen) return;
-    setDispatchIds(list.map((v) => v.id));
+    setDispatchIds(filtered.map((v) => v.id));
     setDispatchResult(null);
-  }, [dispatchOpen, list]);
+  }, [dispatchOpen, filtered]);
+
+  useEffect(() => {
+    setSelected((prev) => filtered.find((d) => d.id === prev?.id) || filtered[0] || null);
+  }, [filtered]);
 
   const dispatchPreview = useMemo(() => {
-    const selected = list.filter((v) => dispatchIds.includes(v.id));
-    const withPhone = selected.filter((v) => v.phone).length;
-    const withEmail = selected.filter((v) => v.email).length;
-    return { total: selected.length, withPhone, withEmail };
+    const selectedRows = list.filter((v) => dispatchIds.includes(v.id));
+    const withPhone = selectedRows.filter((v) => v.phone).length;
+    const withEmail = selectedRows.filter((v) => v.email).length;
+    return { total: selectedRows.length, withPhone, withEmail };
   }, [list, dispatchIds]);
 
   const toggleDispatchId = (id: string) => {
@@ -186,18 +227,6 @@ export default function App() {
       setDispatchBusy(false);
     }
   };
-
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return list;
-    return list.filter(
-      (v) =>
-        v.name.toLowerCase().includes(query) ||
-        v.displayName?.toLowerCase().includes(query) ||
-        v.city.toLowerCase().includes(query) ||
-        (v.igBiography ?? "").toLowerCase().includes(query)
-    );
-  }, [list, q]);
 
   const runEnrich = async (mode = "instagram") => {
     setEnriching(true);
@@ -273,12 +302,16 @@ export default function App() {
               <strong>{meta.total.toLocaleString("pt-BR")}</strong>
             </div>
             <div className="kpi">
-              <span>Com seguidores</span>
-              <strong>{meta.withFollowers ?? 0}</strong>
+              <span>Com telefone</span>
+              <strong>{(meta.withPhone ?? 0).toLocaleString("pt-BR")}</strong>
             </div>
             <div className="kpi">
-              <span>Com bio</span>
-              <strong>{meta.withBio ?? 0}</strong>
+              <span>Com e-mail</span>
+              <strong>{(meta.withEmail ?? 0).toLocaleString("pt-BR")}</strong>
+            </div>
+            <div className="kpi">
+              <span>Com seguidores</span>
+              <strong>{meta.withFollowers ?? 0}</strong>
             </div>
             <div className="kpi">
               <span>Maior alcance</span>
@@ -313,6 +346,19 @@ export default function App() {
             </button>
           ))}
         </div>
+        <label>
+          Contato
+          <select
+            value={contactFilter}
+            onChange={(e) => setContactFilter(e.target.value as ContactFilter)}
+          >
+            <option value="todos">Todos</option>
+            <option value="qualquer">Telefone ou e-mail</option>
+            <option value="telefone">Só com telefone</option>
+            <option value="email">Só com e-mail</option>
+            <option value="ambos">Telefone e e-mail</option>
+          </select>
+        </label>
         <label className="search">
           Buscar
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nome, cidade ou bio" />
@@ -321,7 +367,7 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={exportCsv} disabled={!filtered.length}>
             CSV
           </button>
-          <button type="button" className="btn ghost" onClick={() => setDispatchOpen(true)} disabled={!list.length}>
+          <button type="button" className="btn ghost" onClick={() => setDispatchOpen(true)} disabled={!filtered.length}>
             Disparo
           </button>
           <button type="button" className="btn ghost" onClick={() => runEnrich("contacts")} disabled={enriching}>
@@ -343,7 +389,15 @@ export default function App() {
             <h1>
               Top 20 · {STATE_NAME[uf]} · {type}
             </h1>
-            <span>{filtered.length} veículos</span>
+            <div className="panel-meta">
+              <span>
+                {filtered.length}
+                {filtered.length !== list.length ? ` de ${list.length}` : ""} veículos
+              </span>
+              <span className="chip">tel {listContactStats.withPhone}</span>
+              <span className="chip">mail {listContactStats.withEmail}</span>
+              <span className="chip">ambos {listContactStats.withBoth}</span>
+            </div>
           </div>
 
           {error && <p className="error">{error}</p>}
@@ -383,6 +437,8 @@ export default function App() {
                       <span>
                         <b>{v.igEngagementRate != null ? `${v.igEngagementRate}%` : "—"}</b> eng.
                       </span>
+                      <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "sem tel"}</span>
+                      <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "sem mail"}</span>
                     </div>
                   </div>
                   <div className="score-chip">{v.score.toFixed(2)}</div>
@@ -622,7 +678,7 @@ export default function App() {
                 {dispatchPreview.withEmail} com e-mail
               </strong>
               <div className="dispatch-list">
-                {list.map((v) => (
+                {filtered.map((v) => (
                   <label key={v.id} className="dispatch-row">
                     <input
                       type="checkbox"
