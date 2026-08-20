@@ -405,6 +405,12 @@ a { color: var(--sand); }
   line-height: 1.45;
   color: var(--sand);
 }
+.bio.editorial small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
 
 .contacts ul {
   list-style: none;

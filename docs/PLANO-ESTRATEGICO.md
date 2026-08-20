@@ -106,6 +106,8 @@ Enquanto métricas oficiais não estão 100% disponíveis, usamos score composto
 
 > Scores v0 são **provisórios** e devem ser recalibrados após o enriquecimento Apify e validação do cliente.
 
+**Atualização 2026-08-20:** o levantamento humano (`Imprensa/ranking_imprensa_nordeste_2026.xlsx`) foi incorporado como ranking editorial (Top 20 não-TV misto por estado). Ver `docs/EDITORIAL.md`.
+
 ---
 
 ## 7. Escopo por estado e categoria

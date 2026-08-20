@@ -417,6 +417,11 @@ async function updateVehicle(pool, row, patch) {
     ig_posts_count: profile?.postsCount ?? row.ig_posts_count,
     ig_avg_likes: profile?.avgLikes ?? row.ig_avg_likes,
     ig_engagement_rate: profile?.engagementRate ?? row.ig_engagement_rate,
+    ig_verified: profile ? profile.verified : row.ig_verified,
+    ig_biography: profile?.biography ?? row.ig_biography,
+    editorial_rank: row.editorial_rank,
+    editorial_band: row.editorial_band,
+    editorial_confidence: row.editorial_confidence,
     last_enriched_at: new Date().toISOString(),
   };
   const scored = computeScore(merged);

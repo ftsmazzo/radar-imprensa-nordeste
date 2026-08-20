@@ -47,5 +47,11 @@ node scripts/score-v0.mjs
 - [x] Score provisional v0 + Top 20
 - [x] API + Postgres
 - [x] Deploy Easypanel
-- [ ] Enrichment Apify
-- [ ] Automação n8n (e-mail / WhatsApp)
+- [x] Ranking editorial humano (Top 20 não-TV por estado)
+- [ ] Enrichment Apify em escala (parcial — pipeline pronto)
+- [ ] Automação n8n (e-mail / WhatsApp) em produção
+
+## Ranking editorial
+
+Levantamento em `Imprensa/ranking_imprensa_nordeste_2026.xlsx` → `npm run import:editorial` → `data/editorial-ranking-v1.json`.  
+Detalhes: [docs/EDITORIAL.md](docs/EDITORIAL.md).

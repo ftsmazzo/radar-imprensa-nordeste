@@ -20,7 +20,7 @@ ENV PORT=3000
 COPY --from=server-deps /app/server/node_modules ./server/node_modules
 COPY server/package.json ./server/package.json
 COPY server/src ./server/src
-COPY data/vehicles-scored-v0.json data/top20-v0.meta.json ./data/
+COPY data/vehicles-scored-v0.json data/top20-v0.meta.json data/editorial-ranking-v1.json ./data/
 COPY --from=web-build /app/web/dist ./public
 
 WORKDIR /app/server

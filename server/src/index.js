@@ -74,8 +74,15 @@ async function migrate() {
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_avg_comments DOUBLE PRECISION;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_engagement_rate DOUBLE PRECISION;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS ig_profile JSONB;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_rank SMALLINT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_band TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_confidence TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_justification TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS editorial_sources JSONB;
     CREATE INDEX IF NOT EXISTS vehicles_uf_type_score_idx ON vehicles (uf, type, score DESC);
     CREATE INDEX IF NOT EXISTS vehicles_enriched_idx ON vehicles (last_enriched_at NULLS FIRST);
+    CREATE INDEX IF NOT EXISTS vehicles_editorial_rank_idx ON vehicles (uf, editorial_rank)
+      WHERE editorial_rank IS NOT NULL;
   `);
 }
 
@@ -120,6 +127,82 @@ async function seedIfEmpty() {
   }
 }
 
+async function applyEditorialRanking() {
+  const editorialPath = path.join(root, "data", "editorial-ranking-v1.json");
+  if (!fs.existsSync(editorialPath)) {
+    console.log("Editorial ranking file missing — skip");
+    return;
+  }
+
+  const pack = JSON.parse(fs.readFileSync(editorialPath, "utf8"));
+  const items = Array.isArray(pack.items) ? pack.items : [];
+  if (!items.length) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`
+      UPDATE vehicles SET
+        editorial_rank = NULL,
+        editorial_band = NULL,
+        editorial_confidence = NULL,
+        editorial_justification = NULL,
+        editorial_sources = NULL
+    `);
+
+    const { computeScore } = await import("./score.js");
+    let applied = 0;
+    for (const item of items) {
+      const sources = {
+        directory: item.sourceDirectory || null,
+        desk: item.sourceDesk || null,
+        version: pack.version || "editorial-v1",
+      };
+      const { rows } = await client.query(`SELECT * FROM vehicles WHERE id = $1`, [item.vehicleId]);
+      if (!rows[0]) continue;
+      const row = rows[0];
+      const scored = computeScore({
+        ...row,
+        editorial_rank: item.rank,
+        editorial_band: item.band,
+        editorial_confidence: item.confidence,
+      });
+      await client.query(
+        `UPDATE vehicles SET
+          editorial_rank = $2,
+          editorial_band = $3,
+          editorial_confidence = $4,
+          editorial_justification = $5,
+          editorial_sources = $6::jsonb,
+          score = $7,
+          confidence = $8,
+          score_version = $9,
+          updated_at = NOW()
+        WHERE id = $1`,
+        [
+          item.vehicleId,
+          item.rank,
+          item.band || null,
+          item.confidence || null,
+          item.justification || null,
+          JSON.stringify(sources),
+          scored.score,
+          scored.confidence,
+          scored.scoreVersion,
+        ]
+      );
+      applied += 1;
+    }
+    await client.query("COMMIT");
+    console.log(`Editorial ranking applied: ${applied}/${items.length}`);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 function mapVehicle(row, rank = null) {
   const profile = row.ig_profile || {};
   return {
@@ -156,6 +239,11 @@ function mapVehicle(row, rank = null) {
     lastEnrichedAt: row.last_enriched_at,
     sources: row.sources,
     metrics: row.metrics,
+    editorialRank: row.editorial_rank != null ? Number(row.editorial_rank) : null,
+    editorialBand: row.editorial_band || null,
+    editorialConfidence: row.editorial_confidence || null,
+    editorialJustification: row.editorial_justification || null,
+    editorialSources: row.editorial_sources || null,
   };
 }
 
@@ -193,6 +281,7 @@ app.get("/api/meta", async (_req, res) => {
       COUNT(*) FILTER (WHERE email IS NOT NULL AND email <> '')::int AS with_email,
       COUNT(*) FILTER (WHERE ig_verified IS TRUE)::int AS verified,
       COUNT(*) FILTER (WHERE last_enriched_at IS NOT NULL)::int AS enriched,
+      COUNT(*) FILTER (WHERE editorial_rank IS NOT NULL)::int AS editorial,
       COALESCE(MAX(instagram_followers), 0)::bigint AS max_followers,
       MAX(score_version) AS score_version,
       MAX(updated_at) AS updated_at,
@@ -210,6 +299,7 @@ app.get("/api/meta", async (_req, res) => {
     withEmail: r.with_email,
     verified: r.verified,
     enriched: r.enriched,
+    editorial: r.editorial,
     maxFollowers: Number(r.max_followers),
     scoreVersion: r.score_version,
     scoredAt: r.updated_at,
@@ -217,9 +307,11 @@ app.get("/api/meta", async (_req, res) => {
     apifyConfigured: Boolean(process.env.APIFY_TOKEN),
     dynamicRanking: true,
     note:
-      r.with_bio > 0
-        ? "Perfil IG enriquecido (bio, posts, engajamento). Top 20 recalcula ao vivo."
-        : "Rode enrichment rico para preencher bio, posts e engajamento.",
+      r.editorial > 0
+        ? "Ranking editorial humano incorporado (Top 20 não-TV por estado). Score mescla editorial + Apify."
+        : r.with_bio > 0
+          ? "Perfil IG enriquecido (bio, posts, engajamento). Top 20 recalcula ao vivo."
+          : "Rode enrichment rico para preencher bio, posts e engajamento.",
   });
 });
 
@@ -231,11 +323,26 @@ app.get("/api/top20", async (req, res) => {
   const { rows } = await pool.query(
     `SELECT * FROM vehicles
      WHERE uf = $1 AND type = $2
-     ORDER BY score DESC, instagram_followers DESC NULLS LAST, name ASC
+     ORDER BY score DESC, editorial_rank ASC NULLS LAST, instagram_followers DESC NULLS LAST, name ASC
      LIMIT 20`,
     [uf, type]
   );
   res.json(rows.map((r, i) => mapVehicle(r, i + 1)));
+});
+
+/** Top 20 editorial misto (não-TV) — levantamento humano por estado. */
+app.get("/api/top20/editorial", async (req, res) => {
+  const uf = String(req.query.uf || "").toUpperCase();
+  if (!uf) return res.status(400).json({ error: "uf is required" });
+
+  const { rows } = await pool.query(
+    `SELECT * FROM vehicles
+     WHERE uf = $1 AND editorial_rank IS NOT NULL
+     ORDER BY editorial_rank ASC, score DESC, name ASC
+     LIMIT 20`,
+    [uf]
+  );
+  res.json(rows.map((r) => mapVehicle(r, Number(r.editorial_rank))));
 });
 
 app.get("/api/vehicle/:id", async (req, res) => {
@@ -368,7 +475,7 @@ app.post("/api/dispatch", async (req, res) => {
     const instancia = String(req.body?.instancia || DISPATCH_DEFAULT_INSTANCE).trim();
     const ids = Array.isArray(req.body?.vehicleIds) ? req.body.vehicleIds.map(String) : null;
 
-    if (!uf || !type) return res.status(400).json({ error: "uf e tipo são obrigatórios" });
+    if (!uf) return res.status(400).json({ error: "uf é obrigatório" });
     if (!assunto || !texto) return res.status(400).json({ error: "assunto e texto são obrigatórios" });
     if (!["whatsapp", "email", "ambos"].includes(canal)) {
       return res.status(400).json({ error: "canal inválido" });
@@ -383,15 +490,16 @@ app.post("/api/dispatch", async (req, res) => {
     let rows;
     if (ids?.length) {
       const { rows: r } = await pool.query(
-        `SELECT id, name, phone, email, score, instagram_followers
-         FROM vehicles WHERE uf = $1 AND type = $2 AND id = ANY($3::text[])
-         ORDER BY score DESC NULLS LAST`,
-        [uf, type, ids]
+        `SELECT id, name, phone, email, score, instagram_followers, type
+         FROM vehicles WHERE uf = $1 AND id = ANY($2::text[])
+         ORDER BY editorial_rank ASC NULLS LAST, score DESC NULLS LAST`,
+        [uf, ids]
       );
       rows = r;
     } else {
+      if (!type) return res.status(400).json({ error: "uf e tipo são obrigatórios" });
       const { rows: r } = await pool.query(
-        `SELECT id, name, phone, email, score, instagram_followers
+        `SELECT id, name, phone, email, score, instagram_followers, type
          FROM vehicles WHERE uf = $1 AND type = $2
          ORDER BY score DESC, instagram_followers DESC NULLS LAST, name ASC
          LIMIT 20`,
@@ -476,15 +584,17 @@ if (publicDir) {
 await waitForDb();
 await migrate();
 await seedIfEmpty();
+await applyEditorialRanking();
 
 // Recalcula scores com a fórmula atual (sem custo Apify)
 {
   const { computeScore } = await import("./score.js");
   const { rows } = await pool.query(
     `SELECT id, completeness, email, phone, instagram, website, website_alive, city, type,
-            instagram_followers, ig_engagement_rate, ig_avg_likes, ig_verified, sources
+            instagram_followers, ig_engagement_rate, ig_avg_likes, ig_verified, sources,
+            editorial_rank, editorial_band, editorial_confidence, ig_biography
      FROM vehicles
-     WHERE instagram_followers IS NOT NULL`
+     WHERE instagram_followers IS NOT NULL OR editorial_rank IS NOT NULL`
   );
   for (const row of rows) {
     const scored = computeScore(row);
@@ -493,7 +603,7 @@ await seedIfEmpty();
       [row.id, scored.score, scored.confidence, scored.scoreVersion]
     );
   }
-  console.log(`Rescored ${rows.length} enriched vehicles`);
+  console.log(`Rescored ${rows.length} enriched/editorial vehicles`);
 }
 
 app.listen(PORT, () => {
