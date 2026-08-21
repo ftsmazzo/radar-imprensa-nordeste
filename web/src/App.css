@@ -250,6 +250,72 @@ a { color: var(--sand); }
   overflow: auto;
 }
 
+.cities-source {
+  margin: 0;
+  padding: 0 0.85rem 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.city-blocks {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.45rem 0.65rem 0.85rem;
+  max-height: 72vh;
+  overflow: auto;
+}
+
+.city-block {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.city-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.7rem 0.85rem 0.55rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.city-head h2 {
+  display: inline;
+  margin: 0 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 550;
+}
+
+.city-rank {
+  color: var(--accent, #f0c75e);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.city-meta {
+  display: flex;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.city-empty {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.city-block .cards {
+  max-height: none;
+  padding: 0.45rem;
+}
+
 .card {
   display: grid;
   grid-template-columns: 2.4rem 3rem 1fr auto;

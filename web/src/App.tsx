@@ -74,7 +74,16 @@ type Meta = {
 };
 
 type ContactFilter = "todos" | "telefone" | "email" | "qualquer" | "ambos";
-type RankingMode = "categoria" | "editorial" | "quantitativo";
+type RankingMode = "categoria" | "editorial" | "quantitativo" | "cidades";
+
+type CityGroup = {
+  rank: number;
+  name: string;
+  matchedCity: string | null;
+  population: number;
+  inventoryCount: number;
+  vehicles: Vehicle[];
+};
 
 const UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
 const TYPES = ["TV", "Rádio", "Jornal", "Portal", "Blog"] as const;
@@ -110,6 +119,8 @@ function initials(name: string) {
 
 export default function App() {
   const [list, setList] = useState<Vehicle[]>([]);
+  const [cityGroups, setCityGroups] = useState<CityGroup[]>([]);
+  const [citiesNote, setCitiesNote] = useState<string | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [uf, setUf] = useState("PE");
   const [type, setType] = useState("Portal");
@@ -141,6 +152,31 @@ export default function App() {
   const loadList = () => {
     setLoading(true);
     setError(null);
+    if (mode === "cidades") {
+      return fetch(`/api/cities/top10?uf=${encodeURIComponent(uf)}&limitPerCity=8`)
+        .then(async (r) => {
+          if (!r.ok) throw new Error(await r.text());
+          return r.json();
+        })
+        .then((data: { cities: CityGroup[]; note?: string; source?: string; referenceDate?: string }) => {
+          const groups = data.cities || [];
+          setCityGroups(groups);
+          setCitiesNote(
+            [data.source, data.referenceDate ? `ref. ${data.referenceDate}` : null, data.note]
+              .filter(Boolean)
+              .join(" · ")
+          );
+          const flat = groups.flatMap((g) => g.vehicles);
+          setList(flat);
+          setSelected((prev) => flat.find((d) => d.id === prev?.id) || flat[0] || null);
+          setDispatchIds(flat.map((d) => d.id));
+        })
+        .catch((e) => setError(String(e)))
+        .finally(() => setLoading(false));
+    }
+
+    setCityGroups([]);
+    setCitiesNote(null);
     const url =
       mode === "editorial"
         ? `/api/top20/editorial?uf=${encodeURIComponent(uf)}`
@@ -192,6 +228,15 @@ export default function App() {
       );
     });
   }, [list, q, contactFilter]);
+
+  const filteredCityGroups = useMemo(() => {
+    if (mode !== "cidades") return [];
+    const ids = new Set(filtered.map((v) => v.id));
+    return cityGroups.map((g) => ({
+      ...g,
+      vehicles: g.vehicles.filter((v) => ids.has(v.id)),
+    }));
+  }, [mode, cityGroups, filtered]);
 
   const listContactStats = useMemo(() => {
     const withPhone = list.filter((v) => v.phone).length;
@@ -396,6 +441,15 @@ export default function App() {
           >
             Por categoria
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "cidades"}
+            className={mode === "cidades" ? "tab on" : "tab"}
+            onClick={() => setMode("cidades")}
+          >
+            Por cidade
+          </button>
         </div>
         {mode === "categoria" && (
           <div className="type-tabs" role="tablist" aria-label="Categoria">
@@ -454,12 +508,15 @@ export default function App() {
         <section className="rank-panel">
           <div className="panel-title">
             <h1>
-              Top 20 · {STATE_NAME[uf]}
-              {mode === "editorial"
-                ? " · Editorial"
-                : mode === "quantitativo"
-                  ? " · Quantitativo"
-                  : ` · ${type}`}
+              {mode === "cidades"
+                ? `Top 10 cidades · ${STATE_NAME[uf]}`
+                : `Top 20 · ${STATE_NAME[uf]}${
+                    mode === "editorial"
+                      ? " · Editorial"
+                      : mode === "quantitativo"
+                        ? " · Quantitativo"
+                        : ` · ${type}`
+                  }`}
             </h1>
             <div className="panel-meta">
               <span>
@@ -474,7 +531,83 @@ export default function App() {
 
           {error && <p className="error">{error}</p>}
           {loading && <p className="loading">Carregando…</p>}
+          {!loading && mode === "cidades" && citiesNote && (
+            <p className="cities-source">{citiesNote}</p>
+          )}
 
+          {mode === "cidades" ? (
+            <div className="city-blocks">
+              {!loading &&
+                filteredCityGroups.map((g) => (
+                  <section key={g.name} className="city-block">
+                    <header className="city-head">
+                      <div>
+                        <span className="city-rank">#{g.rank}</span>
+                        <h2>{g.name}</h2>
+                      </div>
+                      <div className="city-meta">
+                        <span>{g.population.toLocaleString("pt-BR")} hab.</span>
+                        <span>
+                          {g.vehicles.length}
+                          {g.inventoryCount > g.vehicles.length
+                            ? ` de ${g.inventoryCount}`
+                            : ""}{" "}
+                          veículos
+                        </span>
+                      </div>
+                    </header>
+                    {g.vehicles.length === 0 ? (
+                      <p className="city-empty">Sem veículos principais cadastrados nesta cidade.</p>
+                    ) : (
+                      <div className="cards">
+                        {g.vehicles.map((v) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            className={selected?.id === v.id ? "card active" : "card"}
+                            onClick={() => setSelected(v)}
+                          >
+                            <div className="card-rank">#{v.rank}</div>
+                            <div className="avatar" aria-hidden>
+                              {v.igProfilePic ? (
+                                <img src={v.igProfilePic} alt="" loading="lazy" />
+                              ) : (
+                                <span>{initials(v.name)}</span>
+                              )}
+                              {v.igVerified && (
+                                <i className="badge-v" title="Verificado">
+                                  ✓
+                                </i>
+                              )}
+                            </div>
+                            <div className="card-body">
+                              <strong>{v.name}</strong>
+                              <em>
+                                {v.type}
+                                {v.editorialBand ? ` · Faixa ${v.editorialBand}` : ""}
+                                {v.deskCoverage ? ` · ${v.deskCoverage}` : ""}
+                              </em>
+                              <div className="metrics">
+                                <span>
+                                  <b>{fmt(v.instagramFollowers)}</b> seg.
+                                </span>
+                                <span className={v.phone ? "ok" : "miss"}>
+                                  {v.phone ? "tel" : "sem tel"}
+                                </span>
+                                <span className={v.email ? "ok" : "miss"}>
+                                  {v.email ? "mail" : "sem mail"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="score-chip">{v.score.toFixed(2)}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                ))}
+            </div>
+          ) : (
           <div className="cards">
             {!loading &&
               filtered.map((v) => (
@@ -520,6 +653,7 @@ export default function App() {
                 </button>
               ))}
           </div>
+          )}
         </section>
 
         <aside className="detail" aria-live="polite">
@@ -731,7 +865,9 @@ export default function App() {
                     ? "Editorial (misto)"
                     : mode === "quantitativo"
                       ? "Quantitativo (desk)"
-                      : type}{" "}
+                      : mode === "cidades"
+                        ? "Por cidade (IBGE)"
+                        : type}{" "}
                   · webhook n8n
                 </p>
               </div>

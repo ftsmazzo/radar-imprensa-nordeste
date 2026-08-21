@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { getJob, listJobs, startEnrichment } from "./enrich.js";
+import { getTopCitiesForUf, resolveCityName } from "./cities.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -517,6 +518,76 @@ app.get("/api/top20/quantitative", async (req, res) => {
     [uf]
   );
   res.json(rows.map((r) => mapVehicle(r, Number(r.quantitative_rank))));
+});
+
+/**
+ * Top 10 municípios IBGE (pop. 2025) do estado + principais veículos de cada cidade.
+ * Query: uf (obrigatório), limitPerCity (default 8, max 20)
+ */
+app.get("/api/cities/top10", async (req, res) => {
+  const uf = String(req.query.uf || "").toUpperCase();
+  if (!uf) return res.status(400).json({ error: "uf is required" });
+
+  const meta = getTopCitiesForUf(uf);
+  if (!meta) return res.status(404).json({ error: `UF sem top 10 IBGE: ${uf}` });
+
+  const limitPerCity = Math.min(20, Math.max(1, Number(req.query.limitPerCity) || 8));
+
+  try {
+    const { rows: cityRows } = await pool.query(
+      `SELECT DISTINCT city FROM vehicles WHERE uf = $1 AND city IS NOT NULL AND city <> ''`,
+      [uf]
+    );
+    const inventory = cityRows.map((r) => r.city);
+
+    const cities = [];
+    for (const c of meta.cities) {
+      const matched = resolveCityName(c.name, inventory);
+      let vehicles = [];
+      let inventoryCount = 0;
+      if (matched) {
+        const { rows } = await pool.query(
+          `SELECT * FROM vehicles
+           WHERE uf = $1 AND city = $2
+           ORDER BY
+             quantitative_rank ASC NULLS LAST,
+             desk_score_final DESC NULLS LAST,
+             score DESC,
+             instagram_followers DESC NULLS LAST,
+             name ASC
+           LIMIT $3`,
+          [uf, matched, limitPerCity]
+        );
+        vehicles = rows.map((r, i) => mapVehicle(r, i + 1));
+        const countRes = await pool.query(
+          `SELECT COUNT(*)::int AS c FROM vehicles WHERE uf = $1 AND city = $2`,
+          [uf, matched]
+        );
+        inventoryCount = countRes.rows[0]?.c || 0;
+      }
+      cities.push({
+        rank: c.rank,
+        name: c.name,
+        matchedCity: matched,
+        population: c.population,
+        inventoryCount,
+        vehicles,
+      });
+    }
+
+    res.json({
+      uf: meta.uf,
+      state: meta.state,
+      source: meta.source,
+      referenceDate: meta.referenceDate,
+      tableUpdatedAt: meta.tableUpdatedAt,
+      note: meta.note,
+      limitPerCity,
+      cities,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
 });
 
 app.get("/api/vehicle/:id", async (req, res) => {

@@ -1,0 +1,144 @@
+{
+  "version": "ibge-top10-cities-ne-2025",
+  "source": "IBGE — Estimativas da População 2025",
+  "referenceDate": "2025-07-01",
+  "tableUpdatedAt": "2026-01-13",
+  "note": "Estimativas municipais oficiais mais recentes disponíveis em ago/2026 (IBGE ainda não havia publicado 2026 nesta consulta). Top 10 municípios por UF do Nordeste.",
+  "ufs": {
+    "AL": {
+      "name": "Alagoas",
+      "cities": [
+        { "rank": 1, "name": "Maceió", "population": 994952 },
+        { "rank": 2, "name": "Arapiraca", "population": 243906 },
+        { "rank": 3, "name": "Rio Largo", "population": 97658 },
+        { "rank": 4, "name": "Palmeira dos Índios", "population": 73621 },
+        { "rank": 5, "name": "Marechal Deodoro", "population": 62477 },
+        { "rank": 6, "name": "União dos Palmares", "population": 60860 },
+        { "rank": 7, "name": "Penedo", "population": 60185 },
+        { "rank": 8, "name": "São Miguel dos Campos", "population": 53380 },
+        { "rank": 9, "name": "Delmiro Gouveia", "population": 52845 },
+        { "rank": 10, "name": "Coruripe", "population": 51784 }
+      ]
+    },
+    "BA": {
+      "name": "Bahia",
+      "cities": [
+        { "rank": 1, "name": "Salvador", "population": 2564204 },
+        { "rank": 2, "name": "Feira de Santana", "population": 660806 },
+        { "rank": 3, "name": "Vitória da Conquista", "population": 396613 },
+        { "rank": 4, "name": "Camaçari", "population": 321636 },
+        { "rank": 5, "name": "Juazeiro", "population": 256122 },
+        { "rank": 6, "name": "Lauro de Freitas", "population": 219564 },
+        { "rank": 7, "name": "Itabuna", "population": 196344 },
+        { "rank": 8, "name": "Ilhéus", "population": 189149 },
+        { "rank": 9, "name": "Porto Seguro", "population": 182630 },
+        { "rank": 10, "name": "Barreiras", "population": 171634 }
+      ]
+    },
+    "CE": {
+      "name": "Ceará",
+      "cities": [
+        { "rank": 1, "name": "Fortaleza", "population": 2578483 },
+        { "rank": 2, "name": "Caucaia", "population": 378406 },
+        { "rank": 3, "name": "Juazeiro do Norte", "population": 305531 },
+        { "rank": 4, "name": "Maracanaú", "population": 251613 },
+        { "rank": 5, "name": "Sobral", "population": 216519 },
+        { "rank": 6, "name": "Crato", "population": 139027 },
+        { "rank": 7, "name": "Itapipoca", "population": 138978 },
+        { "rank": 8, "name": "Maranguape", "population": 108622 },
+        { "rank": 9, "name": "Iguatu", "population": 102588 },
+        { "rank": 10, "name": "Quixadá", "population": 88846 }
+      ]
+    },
+    "MA": {
+      "name": "Maranhão",
+      "cities": [
+        { "rank": 1, "name": "São Luís", "population": 1089215 },
+        { "rank": 2, "name": "Imperatriz", "population": 285806 },
+        { "rank": 3, "name": "São José de Ribamar", "population": 259164 },
+        { "rank": 4, "name": "Timon", "population": 182711 },
+        { "rank": 5, "name": "Caxias", "population": 163546 },
+        { "rank": 6, "name": "Paço do Lumiar", "population": 153158 },
+        { "rank": 7, "name": "Codó", "population": 118283 },
+        { "rank": 8, "name": "Açailândia", "population": 110611 },
+        { "rank": 9, "name": "Bacabal", "population": 107755 },
+        { "rank": 10, "name": "Balsas", "population": 105974 }
+      ]
+    },
+    "PB": {
+      "name": "Paraíba",
+      "cities": [
+        { "rank": 1, "name": "João Pessoa", "population": 897633 },
+        { "rank": 2, "name": "Campina Grande", "population": 443911 },
+        { "rank": 3, "name": "Santa Rita", "population": 160852 },
+        { "rank": 4, "name": "Patos", "population": 108104 },
+        { "rank": 5, "name": "Bayeux", "population": 83862 },
+        { "rank": 6, "name": "Cabedelo", "population": 70734 },
+        { "rank": 7, "name": "Sousa", "population": 70066 },
+        { "rank": 8, "name": "Cajazeiras", "population": 66585 },
+        { "rank": 9, "name": "Guarabira", "population": 60057 },
+        { "rank": 10, "name": "Sapé", "population": 53457 }
+      ]
+    },
+    "PE": {
+      "name": "Pernambuco",
+      "cities": [
+        { "rank": 1, "name": "Recife", "population": 1588376 },
+        { "rank": 2, "name": "Jaboatão dos Guararapes", "population": 684293 },
+        { "rank": 3, "name": "Petrolina", "population": 418444 },
+        { "rank": 4, "name": "Caruaru", "population": 405408 },
+        { "rank": 5, "name": "Paulista", "population": 365144 },
+        { "rank": 6, "name": "Olinda", "population": 364717 },
+        { "rank": 7, "name": "Cabo de Santo Agostinho", "population": 218049 },
+        { "rank": 8, "name": "Camaragibe", "population": 156112 },
+        { "rank": 9, "name": "Garanhuns", "population": 151803 },
+        { "rank": 10, "name": "Vitória de Santo Antão", "population": 144243 }
+      ]
+    },
+    "PI": {
+      "name": "Piauí",
+      "cities": [
+        { "rank": 1, "name": "Teresina", "population": 905692 },
+        { "rank": 2, "name": "Parnaíba", "population": 170491 },
+        { "rank": 3, "name": "Picos", "population": 86701 },
+        { "rank": 4, "name": "Piripiri", "population": 67887 },
+        { "rank": 5, "name": "Floriano", "population": 64393 },
+        { "rank": 6, "name": "Altos", "population": 50094 },
+        { "rank": 7, "name": "Barras", "population": 49703 },
+        { "rank": 8, "name": "União", "population": 47896 },
+        { "rank": 9, "name": "Campo Maior", "population": 47119 },
+        { "rank": 10, "name": "José de Freitas", "population": 44689 }
+      ]
+    },
+    "RN": {
+      "name": "Rio Grande do Norte",
+      "cities": [
+        { "rank": 1, "name": "Natal", "population": 784249 },
+        { "rank": 2, "name": "Mossoró", "population": 278587 },
+        { "rank": 3, "name": "Parnamirim", "population": 271713 },
+        { "rank": 4, "name": "São Gonçalo do Amarante", "population": 124495 },
+        { "rank": 5, "name": "Macaíba", "population": 87056 },
+        { "rank": 6, "name": "Ceará-Mirim", "population": 83543 },
+        { "rank": 7, "name": "Extremoz", "population": 68584 },
+        { "rank": 8, "name": "Caicó", "population": 63338 },
+        { "rank": 9, "name": "Açu", "population": 59099 },
+        { "rank": 10, "name": "São José de Mipibu", "population": 50053 }
+      ]
+    },
+    "SE": {
+      "name": "Sergipe",
+      "cities": [
+        { "rank": 1, "name": "Aracaju", "population": 630932 },
+        { "rank": 2, "name": "Nossa Senhora do Socorro", "population": 204081 },
+        { "rank": 3, "name": "Itabaiana", "population": 109250 },
+        { "rank": 4, "name": "Lagarto", "population": 105957 },
+        { "rank": 5, "name": "São Cristóvão", "population": 101213 },
+        { "rank": 6, "name": "Estância", "population": 67060 },
+        { "rank": 7, "name": "Tobias Barreto", "population": 52783 },
+        { "rank": 8, "name": "Barra dos Coqueiros", "population": 45175 },
+        { "rank": 9, "name": "Simão Dias", "population": 44503 },
+        { "rank": 10, "name": "Nossa Senhora da Glória", "population": 43686 }
+      ]
+    }
+  }
+}
