@@ -9,7 +9,14 @@ Evolução do [Radar v1](https://radarimprensanordeste.manus.space/) com ranking
 - **Serviços:** `web` (app) + `postgres` (PostgreSQL 16)
 - **Repo:** https://github.com/ftsmazzo/radar-imprensa-nordeste
 
-Health: `/api/health` · Meta: `/api/meta` · Ranking: `/api/top20?uf=PE&type=Portal`
+Health: `/api/health` · Catálogo MCP: `/api/catalog` · Busca cruzada: `/api/search`
+
+Exemplos:
+- Contatos em PE, Top 10 IBGE: `/api/search?uf=PE&top10=true&hasContact=true`
+- Rádios de Recife: `/api/search?uf=PE&city=Recife&type=Rádio`
+- Cidades do estado: `/api/cities?uf=PE&top10=true`
+- Facetas: `/api/facets?uf=PE&hasPhone=true`
+- Ranking: `/api/top20?uf=PE&type=Portal`
 
 ## Estrutura
 

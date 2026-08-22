@@ -5,6 +5,14 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { getJob, listJobs, startEnrichment } from "./enrich.js";
 import { getTopCitiesForUf, resolveCityName } from "./cities.js";
+import {
+  CATALOG,
+  attachIbge,
+  facets as searchFacets,
+  listCities,
+  parseSearchQuery,
+  searchVehicles,
+} from "./search.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -100,6 +108,8 @@ async function migrate() {
       WHERE editorial_rank IS NOT NULL;
     CREATE INDEX IF NOT EXISTS vehicles_quantitative_rank_idx ON vehicles (uf, quantitative_rank)
       WHERE quantitative_rank IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS vehicles_uf_city_idx ON vehicles (uf, city);
+    CREATE INDEX IF NOT EXISTS vehicles_name_idx ON vehicles (name);
   `);
 }
 
@@ -399,6 +409,29 @@ function mapVehicle(row, rank = null) {
   };
 }
 
+function mapVehicleSummary(row, ibge = {}) {
+  return {
+    id: row.id,
+    name: row.name,
+    displayName: row.ig_full_name || row.name,
+    uf: row.uf,
+    state: row.state,
+    city: row.city,
+    type: row.type,
+    phone: row.phone || null,
+    email: row.email || null,
+    website: row.website || null,
+    instagram: row.instagram || null,
+    score: Number(row.score),
+    editorialRank: row.editorial_rank != null ? Number(row.editorial_rank) : null,
+    quantitativeRank: row.quantitative_rank != null ? Number(row.quantitative_rank) : null,
+    deskScoreFinal: row.desk_score_final != null ? Number(row.desk_score_final) : null,
+    instagramFollowers: row.instagram_followers != null ? Number(row.instagram_followers) : null,
+    igVerified: Boolean(row.ig_verified),
+    ...ibge,
+  };
+}
+
 function requireEnrichAuth(req, res) {
   if (!ENRICH_TOKEN) return true;
   const header = req.headers["x-enrich-token"] || req.query.token;
@@ -415,7 +448,13 @@ app.use(express.json({ limit: "2mb" }));
 app.get("/api/health", async (_req, res) => {
   try {
     const { rows } = await pool.query("SELECT COUNT(*)::int AS c FROM vehicles");
-    res.json({ ok: true, vehicles: rows[0].c, apifyConfigured: Boolean(process.env.APIFY_TOKEN) });
+    res.json({
+      ok: true,
+      vehicles: rows[0].c,
+      apifyConfigured: Boolean(process.env.APIFY_TOKEN),
+      search: "/api/search",
+      catalog: "/api/catalog",
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
@@ -473,6 +512,76 @@ app.get("/api/meta", async (_req, res) => {
             ? "Perfil IG enriquecido (bio, posts, engajamento). Top 20 recalcula ao vivo."
             : "Rode enrichment rico para preencher bio, posts e engajamento.",
   });
+});
+
+app.get("/api/catalog", (_req, res) => {
+  res.json(CATALOG);
+});
+
+app.get("/api/search", async (req, res) => {
+  const parsed = parseSearchQuery(req.query);
+  if (parsed.error) return res.status(400).json({ error: parsed.error });
+  try {
+    const { total, rows, ibgeLookup } = await searchVehicles(pool, parsed);
+    const items = rows.map((r, i) => {
+      const ibge = attachIbge(r, ibgeLookup);
+      const rank = parsed.offset + i + 1;
+      if (parsed.fields === "full") return { ...mapVehicle(r, rank), ...ibge };
+      return mapVehicleSummary(r, ibge);
+    });
+    res.json({
+      total,
+      limit: parsed.limit,
+      offset: parsed.offset,
+      filters: {
+        q: parsed.q || null,
+        uf: parsed.ufs,
+        type: parsed.types,
+        city: parsed.city || null,
+        top10: parsed.top10,
+        ibgeRank: parsed.ibgeRank,
+        hasPhone: parsed.hasPhone,
+        hasEmail: parsed.hasEmail,
+        hasInstagram: parsed.hasInstagram,
+        hasWebsite: parsed.hasWebsite,
+        hasContact: parsed.hasContact,
+        editorialOnly: parsed.editorialOnly,
+        quantitativeOnly: parsed.quantitativeOnly,
+        sort: parsed.sort,
+        fields: parsed.fields,
+      },
+      items,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/cities", async (req, res) => {
+  const parsed = parseSearchQuery(req.query);
+  if (parsed.error) return res.status(400).json({ error: parsed.error });
+  try {
+    const cities = await listCities(pool, parsed);
+    res.json({
+      total: cities.length,
+      top10: parsed.top10,
+      uf: parsed.ufs,
+      cities,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/facets", async (req, res) => {
+  const parsed = parseSearchQuery(req.query);
+  if (parsed.error) return res.status(400).json({ error: parsed.error });
+  try {
+    const data = await searchFacets(pool, parsed);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) });
+  }
 });
 
 app.get("/api/top20", async (req, res) => {
