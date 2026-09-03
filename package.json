@@ -8,6 +8,7 @@
     "import:editorial": "python scripts/import-editorial-ranking.py",
     "import:desk": "python scripts/import-desk-score.py",
     "import:ap": "node scripts/build-ap-vehicles.mjs",
+    "discover:ap": "node scripts/discover-ap-channels.mjs",
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build"
   }

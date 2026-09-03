@@ -80,6 +80,19 @@ type ContactFilter = "todos" | "telefone" | "email" | "whatsapp" | "qualquer" | 
 type RankingMode = "categoria" | "editorial" | "quantitativo" | "cidades" | "todos";
 type Region = "NE" | "AP";
 
+type AppConfig = {
+  region: Region;
+  brand: string;
+  tag: string;
+  ufs: string[];
+  defaultUf: string;
+  defaultMode: RankingMode;
+  limitPerCity: number;
+  footer: string;
+  dispatchConfigured: boolean;
+  apifyConfigured: boolean;
+};
+
 type CityGroup = {
   rank: number;
   name: string;
@@ -144,6 +157,7 @@ function initials(name: string) {
 }
 
 export default function App() {
+  const [config, setConfig] = useState<AppConfig | null>(null);
   const [list, setList] = useState<Vehicle[]>([]);
   const [cityGroups, setCityGroups] = useState<CityGroup[]>([]);
   const [citiesNote, setCitiesNote] = useState<string | null>(null);
@@ -170,6 +184,18 @@ export default function App() {
   const [dispatchBusy, setDispatchBusy] = useState(false);
   const [dispatchResult, setDispatchResult] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((cfg: AppConfig) => {
+        setConfig(cfg);
+        setRegion(cfg.region);
+        setUf(cfg.defaultUf);
+        setMode(cfg.defaultMode);
+      })
+      .catch((e) => setError(String(e)));
+  }, []);
+
   const loadMeta = () =>
     fetch(region === "AP" ? "/api/meta?uf=AP" : "/api/meta")
       .then((r) => r.json())
@@ -177,10 +203,13 @@ export default function App() {
       .catch((e) => setError(String(e)));
 
   const loadList = () => {
+    if (!config) return;
     setLoading(true);
     setError(null);
     if (mode === "cidades") {
-      return fetch(`/api/cities/top10?uf=${encodeURIComponent(uf)}&limitPerCity=${region === "AP" ? 5 : 8}`)
+      return fetch(
+        `/api/cities/top10?uf=${encodeURIComponent(uf)}&limitPerCity=${config.limitPerCity}`
+      )
         .then(async (r) => {
           if (!r.ok) throw new Error(await r.text());
           return r.json();
@@ -241,12 +270,16 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!config) return;
     loadMeta();
-  }, [region]);
+  }, [config, region]);
 
   useEffect(() => {
+    if (!config) return;
     loadList();
-  }, [uf, type, mode, region]);
+  }, [config, uf, type, mode, region]);
+
+  const ufOptions = config?.ufs?.length ? config.ufs : region === "AP" ? ["AP"] : [...UFS_NE];
 
   const matchesContact = (v: Vehicle, filter: ContactFilter) => {
     const hasPhone = Boolean(v.phone);
@@ -303,9 +336,10 @@ export default function App() {
 
   const dispatchPreview = useMemo(() => {
     const selectedRows = list.filter((v) => dispatchIds.includes(v.id));
-    const withPhone = selectedRows.filter((v) => v.phone).length;
+    const withPhone = selectedRows.filter((v) => v.phone || v.whatsapp).length;
     const withEmail = selectedRows.filter((v) => v.email).length;
-    return { total: selectedRows.length, withPhone, withEmail };
+    const withWa = selectedRows.filter((v) => waMe(v.whatsapp, v.phone)).length;
+    return { total: selectedRows.length, withPhone, withEmail, withWa };
   }, [list, dispatchIds]);
 
   const toggleDispatchId = (id: string) => {
@@ -411,13 +445,22 @@ export default function App() {
     <div className="shell">
       <div className="glow" aria-hidden />
 
+      {!config && (
+        <p className="loading" style={{ padding: "2rem 0" }}>
+          Carregando Radar…
+        </p>
+      )}
+
+      {config && (
+      <>
       <header className="top">
         <div className="brand-block">
-          <p className="brand">{region === "AP" ? "Radar Imprensa Amapá" : "Radar Imprensa Nordeste"}</p>
+          <p className="brand">{config?.brand || (region === "AP" ? "Radar Imprensa Amapá" : "Radar Imprensa Nordeste")}</p>
           <p className="tag">
-            {region === "AP"
-              ? "16 municípios · rádio, TV, jornal, portal e blog · CSV com WhatsApp e telefone clicáveis"
-              : "Mapa vivo dos veículos que realmente alcançam audiência"}
+            {config?.tag ||
+              (region === "AP"
+                ? "16 municípios · rádio, TV, jornal, portal e blog · CSV com WhatsApp e telefone clicáveis"
+                : "Mapa vivo dos veículos que realmente alcançam audiência")}
           </p>
         </div>
         {meta && (
@@ -461,44 +504,16 @@ export default function App() {
       </header>
 
       <section className="dock">
-        <div className="type-tabs" role="tablist" aria-label="Região">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={region === "NE"}
-            className={region === "NE" ? "tab on" : "tab"}
-            onClick={() => {
-              setRegion("NE");
-              setUf("PE");
-              setMode("quantitativo");
-            }}
-          >
-            Nordeste
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={region === "AP"}
-            className={region === "AP" ? "tab on" : "tab"}
-            onClick={() => {
-              setRegion("AP");
-              setUf("AP");
-              setMode("cidades");
-            }}
-          >
-            Amapá
-          </button>
-        </div>
         <label>
           Estado
           <select
             value={uf}
             onChange={(e) => setUf(e.target.value)}
-            disabled={region === "AP"}
+            disabled={ufOptions.length <= 1}
           >
-            {(region === "AP" ? (["AP"] as const) : UFS_NE).map((code) => (
+            {ufOptions.map((code) => (
               <option key={code} value={code}>
-                {code} — {STATE_NAME[code]}
+                {code} — {STATE_NAME[code] || code}
               </option>
             ))}
           </select>
@@ -595,7 +610,7 @@ export default function App() {
             CSV
           </button>
           <button type="button" className="btn ghost" onClick={() => setDispatchOpen(true)} disabled={!filtered.length}>
-            Disparo
+            WhatsApp / E-mail
           </button>
           <button type="button" className="btn ghost" onClick={() => runEnrich("contacts")} disabled={enriching}>
             Contatos
@@ -960,12 +975,10 @@ export default function App() {
       </div>
 
       <footer className="foot">
-        Inventário base:{" "}
-        <a href="https://radarimprensanordeste.manus.space/" target="_blank" rel="noreferrer">
-          Radar v1
-        </a>
-        {" · "}
-        Enrichment Apify · ranking editorial humano · disparo via webhook
+        {config?.footer ||
+          (region === "AP"
+            ? "Inventário Amapá · disparo WhatsApp/e-mail via n8n"
+            : "Inventário Nordeste · Enrichment Apify · ranking editorial · disparo via webhook")}
       </footer>
 
       {dispatchOpen && (
@@ -979,8 +992,8 @@ export default function App() {
           >
             <header className="drawer-head">
               <div>
-                <p className="eyebrow">Automação</p>
-                <h2 id="dispatch-title">Disparo Top 20</h2>
+                <p className="eyebrow">Disparo na plataforma</p>
+                <h2 id="dispatch-title">WhatsApp e e-mail</h2>
                 <p className="drawer-sub">
                   {STATE_NAME[uf]} ·{" "}
                   {mode === "editorial"
@@ -988,9 +1001,13 @@ export default function App() {
                     : mode === "quantitativo"
                       ? "Quantitativo (desk)"
                       : mode === "cidades"
-                        ? "Por cidade (IBGE)"
-                        : type}{" "}
-                  · webhook n8n
+                        ? region === "AP"
+                          ? "Por cidade (16 municípios)"
+                          : "Por cidade (IBGE)"
+                        : mode === "todos"
+                          ? "Todos os veículos"
+                          : type}{" "}
+                  · {config?.dispatchConfigured ? "n8n pronto" : "configure N8N_DISPATCH_WEBHOOK"}
                 </p>
               </div>
               <button type="button" className="btn ghost" onClick={() => setDispatchOpen(false)} disabled={dispatchBusy}>
@@ -1057,9 +1074,12 @@ export default function App() {
 
             <div className="dispatch-preview">
               <strong>
-                {dispatchPreview.total} selecionados · {dispatchPreview.withPhone} com telefone ·{" "}
-                {dispatchPreview.withEmail} com e-mail
+                {dispatchPreview.total} selecionados · {dispatchPreview.withWa} WhatsApp ·{" "}
+                {dispatchPreview.withPhone} telefone · {dispatchPreview.withEmail} e-mail
               </strong>
+              <p className="drawer-sub" style={{ marginTop: "0.35rem" }}>
+                Simulação só testa o fluxo. “Enviar de verdade” dispara pela Evolution (WhatsApp) e/ou e-mail no n8n.
+              </p>
               <div className="dispatch-list">
                 {filtered.map((v) => (
                   <label key={v.id} className="dispatch-row">
@@ -1071,6 +1091,8 @@ export default function App() {
                     <span className="rank">#{v.rank}</span>
                     <span className="name">{v.name}</span>
                     <span className="hint">
+                      {waMe(v.whatsapp, v.phone) ? "wa" : "—"}
+                      {" · "}
                       {v.phone ? "tel" : "—"}
                       {" · "}
                       {v.email ? "mail" : "—"}
@@ -1103,6 +1125,8 @@ export default function App() {
             </footer>
           </aside>
         </div>
+      )}
+      </>
       )}
     </div>
   );

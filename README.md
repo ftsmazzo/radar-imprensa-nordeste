@@ -19,11 +19,22 @@ Exemplos:
 - Facetas: `/api/facets?uf=PE&hasPhone=true`
 - Ranking: `/api/top20?uf=PE&type=Portal`
 
-## Radar Amapá
+## Radar Amapá (frontend separado)
 
-Segunda região no mesmo painel (aba **Amapá**). Inventário desk research web — não havia a base v1 do Nordeste.
+Mesmo repo/Postgres; instâncias distintas via `RADAR_REGION`:
 
-- Seed: `data/vehicles-ap-v1.json` (`npm run import:ap`)
+| Env | Frontend |
+|-----|----------|
+| `RADAR_REGION=NE` | só Nordeste |
+| `RADAR_REGION=AP` | só Amapá |
+
+- Config: `GET /api/config`
+- Seed AP: `data/vehicles-ap-v1.json` (`npm run import:ap`)
+- Descoberta extra: `OPENROUTER_API_KEY=... npm run discover:ap` (Perplexity no OpenRouter); opcional `--with-apify`
+- Disparo WhatsApp/e-mail: botão na UI → `POST /api/dispatch` → webhook n8n (`N8N_DISPATCH_WEBHOOK`)
+
+## Radar Amapá (dados)
+
 - 16 municípios IBGE 2026: `data/ibge-cities-ap-2026.json`
 - Campos: endereço, telefone, WhatsApp, site, e-mail · CSV com `tel:` / `https://wa.me/`
 - Cidades sem emissora mapeada usam o portal institucional da prefeitura (marcado nas métricas)

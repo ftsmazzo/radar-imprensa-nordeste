@@ -13,6 +13,7 @@ import {
   parseSearchQuery,
   searchVehicles,
 } from "./search.js";
+import { REGION_META, resolveRadarRegion } from "./region.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -21,6 +22,8 @@ const { Pool } = pg;
 const PORT = Number(process.env.PORT || 3000);
 const DATABASE_URL = process.env.DATABASE_URL;
 const ENRICH_TOKEN = process.env.ENRICH_TOKEN || "";
+const RADAR_REGION = resolveRadarRegion();
+const REGION = REGION_META[RADAR_REGION];
 
 if (!DATABASE_URL) {
   console.error("DATABASE_URL is required");
@@ -520,10 +523,28 @@ app.get("/api/health", async (_req, res) => {
       apifyConfigured: Boolean(process.env.APIFY_TOKEN),
       search: "/api/search",
       catalog: "/api/catalog",
+      region: RADAR_REGION,
+      brand: REGION.brand,
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
+});
+
+app.get("/api/config", (_req, res) => {
+  res.json({
+    region: RADAR_REGION,
+    brand: REGION.brand,
+    tag: REGION.tag,
+    ufs: REGION.ufs,
+    defaultUf: REGION.defaultUf,
+    defaultMode: REGION.defaultMode,
+    limitPerCity: REGION.limitPerCity,
+    footer: REGION.footer,
+    dispatchConfigured: Boolean(process.env.N8N_DISPATCH_WEBHOOK),
+    apifyConfigured: Boolean(process.env.APIFY_TOKEN),
+    openRouterConfigured: Boolean(process.env.OPENROUTER_API_KEY),
+  });
 });
 
 app.get("/api/meta", async (req, res) => {
@@ -907,6 +928,11 @@ app.post("/api/dispatch", async (req, res) => {
     const ids = Array.isArray(req.body?.vehicleIds) ? req.body.vehicleIds.map(String) : null;
 
     if (!uf) return res.status(400).json({ error: "uf é obrigatório" });
+    if (REGION.ufs.length && !REGION.ufs.includes(uf)) {
+      return res.status(400).json({
+        error: `UF fora desta instância (${RADAR_REGION}). Use: ${REGION.ufs.join(", ")}`,
+      });
+    }
     if (!assunto || !texto) return res.status(400).json({ error: "assunto e texto são obrigatórios" });
     if (!["whatsapp", "email", "ambos"].includes(canal)) {
       return res.status(400).json({ error: "canal inválido" });
@@ -921,7 +947,7 @@ app.post("/api/dispatch", async (req, res) => {
     let rows;
     if (ids?.length) {
       const { rows: r } = await pool.query(
-        `SELECT id, name, phone, email, score, instagram_followers, type
+        `SELECT id, name, phone, whatsapp, email, score, instagram_followers, type
          FROM vehicles WHERE uf = $1 AND id = ANY($2::text[])
          ORDER BY editorial_rank ASC NULLS LAST, score DESC NULLS LAST`,
         [uf, ids]
@@ -930,7 +956,7 @@ app.post("/api/dispatch", async (req, res) => {
     } else {
       if (!type) return res.status(400).json({ error: "uf e tipo são obrigatórios" });
       const { rows: r } = await pool.query(
-        `SELECT id, name, phone, email, score, instagram_followers, type
+        `SELECT id, name, phone, whatsapp, email, score, instagram_followers, type
          FROM vehicles WHERE uf = $1 AND type = $2
          ORDER BY score DESC, instagram_followers DESC NULLS LAST, name ASC
          LIMIT 20`,
@@ -939,14 +965,18 @@ app.post("/api/dispatch", async (req, res) => {
       rows = r;
     }
 
-    const destinos = rows.map((v, i) => ({
-      id: v.id,
-      veiculo: v.name,
-      phone: cleanPhone(v.phone),
-      email: v.email || null,
-      rank: i + 1,
-      followers: v.instagram_followers != null ? Number(v.instagram_followers) : null,
-    }));
+    const destinos = rows.map((v, i) => {
+      const wa = cleanPhone(v.whatsapp) || cleanPhone(v.phone);
+      return {
+        id: v.id,
+        veiculo: v.name,
+        phone: wa,
+        whatsapp: cleanPhone(v.whatsapp),
+        email: v.email || null,
+        rank: i + 1,
+        followers: v.instagram_followers != null ? Number(v.instagram_followers) : null,
+      };
+    });
 
     const reachable = destinos.filter((d) => {
       if (canal === "whatsapp") return Boolean(d.phone);
@@ -956,7 +986,8 @@ app.post("/api/dispatch", async (req, res) => {
 
     const payload = {
       uf,
-      tipo: type,
+      tipo: type || (RADAR_REGION === "AP" ? "Amapá" : type),
+      regiao: RADAR_REGION,
       assunto,
       texto,
       link,
@@ -1041,5 +1072,5 @@ await applyAmapaSeed();
 }
 
 app.listen(PORT, () => {
-  console.log(`Radar API listening on :${PORT}`);
+  console.log(`Radar API listening on :${PORT} · region=${RADAR_REGION} · ${REGION.brand}`);
 });
