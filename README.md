@@ -19,6 +19,11 @@ Exemplos:
 - Facetas: `/api/facets?uf=PE&hasPhone=true`
 - Ranking: `/api/top20?uf=PE&type=Portal`
 
+## MCP Amapá (agente)
+
+URL: `https://radar-imprensa-mcp-amapa.kxryyk.easypanel.host/mcp`  
+Docs: `mcp-amapa/README.md` · tools: `radar_amapa`, `radar_amapa_buscar`, `radar_amapa_cidades`, `radar_amapa_top`, `radar_amapa_veiculo`, `radar_amapa_facetas`
+
 ## Radar Amapá (frontend separado)
 
 Mesmo repo/Postgres; instâncias distintas via `RADAR_REGION`:
