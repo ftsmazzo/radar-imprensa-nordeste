@@ -14,9 +14,19 @@ Health: `/api/health` · Catálogo MCP: `/api/catalog` · Busca cruzada: `/api/s
 Exemplos:
 - Contatos em PE, Top 10 IBGE: `/api/search?uf=PE&top10=true&hasContact=true`
 - Rádios de Recife: `/api/search?uf=PE&city=Recife&type=Rádio`
+- **Amapá (16 cidades, 5 principais):** `/api/search?uf=AP` · `/api/cities/top10?uf=AP` (limit 5)
 - Cidades do estado: `/api/cities?uf=PE&top10=true`
 - Facetas: `/api/facets?uf=PE&hasPhone=true`
 - Ranking: `/api/top20?uf=PE&type=Portal`
+
+## Radar Amapá
+
+Segunda região no mesmo painel (aba **Amapá**). Inventário desk research web — não havia a base v1 do Nordeste.
+
+- Seed: `data/vehicles-ap-v1.json` (`npm run import:ap`)
+- 16 municípios IBGE 2026: `data/ibge-cities-ap-2026.json`
+- Campos: endereço, telefone, WhatsApp, site, e-mail · CSV com `tel:` / `https://wa.me/`
+- Cidades sem emissora mapeada usam o portal institucional da prefeitura (marcado nas métricas)
 
 ## Estrutura
 

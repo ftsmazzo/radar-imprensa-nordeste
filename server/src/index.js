@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { getJob, listJobs, startEnrichment } from "./enrich.js";
-import { getTopCitiesForUf, resolveCityName } from "./cities.js";
+import { defaultLimitPerCity, getTopCitiesForUf, resolveCityName } from "./cities.js";
 import {
   CATALOG,
   attachIbge,
@@ -102,6 +102,8 @@ async function migrate() {
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_score_final DOUBLE PRECISION;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS desk_coverage TEXT;
     ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS quantitative_rank SMALLINT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS address TEXT;
+    ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS whatsapp TEXT;
     CREATE INDEX IF NOT EXISTS vehicles_uf_type_score_idx ON vehicles (uf, type, score DESC);
     CREATE INDEX IF NOT EXISTS vehicles_enriched_idx ON vehicles (last_enriched_at NULLS FIRST);
     CREATE INDEX IF NOT EXISTS vehicles_editorial_rank_idx ON vehicles (uf, editorial_rank)
@@ -351,6 +353,66 @@ async function applyDeskScore() {
   }
 }
 
+async function applyAmapaSeed() {
+  const apPath = path.join(root, "data", "vehicles-ap-v1.json");
+  if (!fs.existsSync(apPath)) {
+    console.log("Amapá seed missing — skip");
+    return;
+  }
+  const pack = JSON.parse(fs.readFileSync(apPath, "utf8"));
+  const items = Array.isArray(pack.items) ? pack.items : [];
+  if (!items.length) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    let applied = 0;
+    for (const v of items) {
+      await client.query(
+        `INSERT INTO vehicles (
+          id, name, uf, state, city, type, phone, email, website, instagram,
+          address, whatsapp, completeness, score, confidence, score_version, sources, metrics
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18::jsonb
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          uf = EXCLUDED.uf,
+          state = EXCLUDED.state,
+          city = EXCLUDED.city,
+          type = EXCLUDED.type,
+          phone = EXCLUDED.phone,
+          email = EXCLUDED.email,
+          website = EXCLUDED.website,
+          instagram = EXCLUDED.instagram,
+          address = EXCLUDED.address,
+          whatsapp = EXCLUDED.whatsapp,
+          completeness = EXCLUDED.completeness,
+          score = EXCLUDED.score,
+          confidence = EXCLUDED.confidence,
+          score_version = EXCLUDED.score_version,
+          sources = EXCLUDED.sources,
+          metrics = EXCLUDED.metrics,
+          updated_at = NOW()`,
+        [
+          v.id, v.name, v.uf, v.state, v.city, v.type, v.phone, v.email, v.website, v.instagram,
+          v.address, v.whatsapp, v.completeness, v.score ?? 0, v.confidence ?? "baixa",
+          v.scoreVersion ?? "ap-desk-v1",
+          JSON.stringify(v.sources ?? []), JSON.stringify(v.metrics ?? {}),
+        ]
+      );
+      applied += 1;
+    }
+    await client.query("COMMIT");
+    console.log(`Amapá seed applied: ${applied}/${items.length}`);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 function mapVehicle(row, rank = null) {
   const profile = row.ig_profile || {};
   return {
@@ -366,6 +428,8 @@ function mapVehicle(row, rank = null) {
     email: row.email,
     website: row.website,
     instagram: row.instagram,
+    address: row.address || null,
+    whatsapp: row.whatsapp || null,
     completeness: row.completeness,
     score: Number(row.score),
     confidence: row.confidence,
@@ -422,6 +486,8 @@ function mapVehicleSummary(row, ibge = {}) {
     email: row.email || null,
     website: row.website || null,
     instagram: row.instagram || null,
+    address: row.address || null,
+    whatsapp: row.whatsapp || null,
     score: Number(row.score),
     editorialRank: row.editorial_rank != null ? Number(row.editorial_rank) : null,
     quantitativeRank: row.quantitative_rank != null ? Number(row.quantitative_rank) : null,
@@ -460,8 +526,12 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-app.get("/api/meta", async (_req, res) => {
-  const { rows } = await pool.query(`
+app.get("/api/meta", async (req, res) => {
+  const uf = req.query.uf ? String(req.query.uf).toUpperCase() : null;
+  const params = [];
+  const where = uf ? (params.push(uf), "WHERE uf = $1") : "";
+  const { rows } = await pool.query(
+    `
     SELECT
       COUNT(*)::int AS total,
       COUNT(DISTINCT uf)::int AS states,
@@ -470,6 +540,7 @@ app.get("/api/meta", async (_req, res) => {
       COUNT(*) FILTER (WHERE ig_biography IS NOT NULL)::int AS with_bio,
       COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone <> '')::int AS with_phone,
       COUNT(*) FILTER (WHERE email IS NOT NULL AND email <> '')::int AS with_email,
+      COUNT(*) FILTER (WHERE whatsapp IS NOT NULL AND BTRIM(whatsapp) <> '')::int AS with_whatsapp,
       COUNT(*) FILTER (WHERE ig_verified IS TRUE)::int AS verified,
       COUNT(*) FILTER (WHERE last_enriched_at IS NOT NULL)::int AS enriched,
       COUNT(*) FILTER (WHERE editorial_rank IS NOT NULL)::int AS editorial,
@@ -481,7 +552,10 @@ app.get("/api/meta", async (_req, res) => {
       MAX(updated_at) AS updated_at,
       MAX(last_enriched_at) AS last_enriched_at
     FROM vehicles
-  `);
+    ${where}
+  `,
+    params
+  );
   const r = rows[0];
   res.json({
     total: r.total,
@@ -491,6 +565,7 @@ app.get("/api/meta", async (_req, res) => {
     withBio: r.with_bio,
     withPhone: r.with_phone,
     withEmail: r.with_email,
+    withWhatsapp: r.with_whatsapp,
     verified: r.verified,
     enriched: r.enriched,
     editorial: r.editorial,
@@ -504,7 +579,9 @@ app.get("/api/meta", async (_req, res) => {
     apifyConfigured: Boolean(process.env.APIFY_TOKEN),
     dynamicRanking: true,
     note:
-      r.desk_scored > 0
+      uf === "AP"
+        ? "Radar Amapá: 16 municípios, até 5 principais por cidade. Desk research web (Atlas da Imprensa + sites oficiais)."
+        : r.desk_scored > 0
         ? "Desk research quantitativo aplicado (seguidores/alcance/evidência). Modos Editorial e Quantitativo disponíveis."
         : r.editorial > 0
           ? "Ranking editorial humano incorporado (Top 20 não-TV por estado). Score mescla editorial + Apify."
@@ -631,7 +708,7 @@ app.get("/api/top20/quantitative", async (req, res) => {
 
 /**
  * Top 10 municípios IBGE (pop. 2025) do estado + principais veículos de cada cidade.
- * Query: uf (obrigatório), limitPerCity (default 8, max 20)
+ * Query: uf (obrigatório), limitPerCity (default 8 no NE, 5 no Amapá, max 20)
  */
 app.get("/api/cities/top10", async (req, res) => {
   const uf = String(req.query.uf || "").toUpperCase();
@@ -640,7 +717,7 @@ app.get("/api/cities/top10", async (req, res) => {
   const meta = getTopCitiesForUf(uf);
   if (!meta) return res.status(404).json({ error: `UF sem top 10 IBGE: ${uf}` });
 
-  const limitPerCity = Math.min(20, Math.max(1, Number(req.query.limitPerCity) || 8));
+  const limitPerCity = Math.min(20, Math.max(1, Number(req.query.limitPerCity) || defaultLimitPerCity(uf)));
 
   try {
     const { rows: cityRows } = await pool.query(
@@ -940,6 +1017,7 @@ await migrate();
 await seedIfEmpty();
 await applyEditorialRanking();
 await applyDeskScore();
+await applyAmapaSeed();
 
 // Recalcula scores com a fórmula atual (sem custo Apify)
 {

@@ -1,0 +1,1749 @@
+{
+  "version": "ap-desk-v1",
+  "importedAt": "2026-09-03T19:36:55.276Z",
+  "methodology": [
+    "Levantamento web público (Atlas da Imprensa, Guia de Mídia, sites oficiais, IBGE 2026).",
+    "Não há a base v1 do Nordeste para o Amapá; contatos só entram se publicados.",
+    "Municípios sem emissora/portal independente: portal institucional da prefeitura, marcado nas métricas.",
+    "WhatsApp preenchido quando o telefone público é celular ou quando a fonte cita WhatsApp."
+  ],
+  "count": 68,
+  "byType": {
+    "TV": 8,
+    "Rádio": 29,
+    "Jornal": 5,
+    "Portal": 21,
+    "Blog": 5
+  },
+  "byCity": {
+    "Macapá": 40,
+    "Santana": 5,
+    "Laranjal do Jari": 5,
+    "Oiapoque": 4,
+    "Porto Grande": 1,
+    "Pedra Branca do Amapari": 1,
+    "Calçoene": 2,
+    "Cutias": 1,
+    "Amapá": 1,
+    "Ferreira Gomes": 2,
+    "Vitória do Jari": 1,
+    "Mazagão": 1,
+    "Tartarugalzinho": 1,
+    "Itaubal": 1,
+    "Serra do Navio": 1,
+    "Pracuúba": 1
+  },
+  "items": [
+    {
+      "id": "ap-001",
+      "name": "REDE AMAZÔNICA AMAPÁ (GLOBO)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "TV",
+      "phone": "+55 (96) 3242-1330",
+      "whatsapp": null,
+      "email": "jornaldoamapa@gruporedeamazonica.com.br",
+      "website": "https://g1.globo.com/ap/amapa/",
+      "instagram": null,
+      "address": "Avenida Diógenes Silva, 2221 — Buritizal, Macapá-AP",
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa",
+        "encontramacapa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-002",
+      "name": "TV AMAZÔNIA (SBT)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "TV",
+      "phone": "+55 (96) 3217-1051",
+      "whatsapp": "+5596991995810",
+      "email": null,
+      "website": "https://www.sbt.com.br/",
+      "instagram": null,
+      "address": "Rua Hildemar Maia, 2135 — Buritizal, CEP 68902-901, Macapá-AP",
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa",
+        "listatudo"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-003",
+      "name": "TV EQUINÓCIO (RECORD)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "TV",
+      "phone": "+55 (96) 99173-2040",
+      "whatsapp": "+5596991732040",
+      "email": null,
+      "website": "https://equinocioplay.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.99,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa",
+        "wikipedia"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-004",
+      "name": "NC TV AMAPÁ (BAND)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "TV",
+      "phone": "+55 (96) 3242-5068",
+      "whatsapp": null,
+      "email": "tvmacapaband@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.99,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa",
+        "wikipedia"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-005",
+      "name": "TV CIDADE MACAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "TV",
+      "phone": "+55 (96) 99110-2225",
+      "whatsapp": "+5596991102225",
+      "email": "redeeldoradoap@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.99,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-006",
+      "name": "TV UNIFAP (EBC)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "TV",
+      "phone": null,
+      "whatsapp": null,
+      "email": "tvunifap@gmail.com",
+      "website": "https://www2.unifap.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.99,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-007",
+      "name": "RÁDIO DIÁRIO FM 90,9",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 3084-2216",
+      "whatsapp": "+5596981270629",
+      "email": "diariofmmacapa@hotmail.com",
+      "website": "https://www.diariofmmacapa.com.br/",
+      "instagram": null,
+      "address": "Avenida Coriolano Jucá, 456 — Centro, CEP 68900-101, Macapá-AP",
+      "completeness": "complete",
+      "score": 0.93,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "site-oficial",
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-008",
+      "name": "CBN AMAZÔNIA MACAPÁ 93,3 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 99114-6676",
+      "whatsapp": "+5596991146676",
+      "email": "jornalismo@cbnamazonia.com.br",
+      "website": "https://www.cbnamazonia.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.93,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa",
+        "cbn"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-009",
+      "name": "RÁDIO ASSEMBLEIA 93,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://al.ap.gov.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.77,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "aleap",
+        "tudoradio"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-010",
+      "name": "EQUATORIAL FM 94,5",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "minimal",
+      "score": 0.72,
+      "confidence": "baixa",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "tudoradio"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-011",
+      "name": "RÁDIO UNIVERSITÁRIA UNIFAP 96,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://www2.unifap.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.77,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "tudoradio"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-012",
+      "name": "EQUINÓCIO FM 99,1",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 99173-2040",
+      "whatsapp": "+5596991732040",
+      "email": null,
+      "website": "https://equinocioplay.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.85,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-013",
+      "name": "RÁDIO FORTE 99,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 99180-1999",
+      "whatsapp": "+5596991801999",
+      "email": "contato@fortefm.com.br",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-014",
+      "name": "RÁDIO SÃO JOSÉ 100,5 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 99187-5263",
+      "whatsapp": "+5596991875263",
+      "email": "rsjfm100@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-015",
+      "name": "RÁDIO 101 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 98129-1101",
+      "whatsapp": "+5596981291101",
+      "email": "radiocidade101fm@hotmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-016",
+      "name": "RÁDIO 102 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 99100-2102",
+      "whatsapp": "+5596991002102",
+      "email": "contato@102fmmacapa.com.br",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-017",
+      "name": "RÁDIO RBN 104,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": "radiorbnmacapa@hotmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-018",
+      "name": "REDE ALELUIA 107,9 FM MACAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": "ouvintes@redealeluia.com.br",
+      "website": "https://www.redealeluia.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.85,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-019",
+      "name": "RÁDIO DIFUSORA DE MACAPÁ 630 AM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "minimal",
+      "score": 0.72,
+      "confidence": "baixa",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "tudoradio"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-020",
+      "name": "DIÁRIO DO AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Jornal",
+      "phone": "+55 (96) 3084-2216",
+      "whatsapp": "+5596981270629",
+      "email": "diario-ap@uol.com.br",
+      "website": "https://www.diariodoamapa.com.br/",
+      "instagram": "https://www.instagram.com/diariodoamapa/",
+      "address": "Avenida Coriolano Jucá, 456 — Centro, entre Tiradentes e General Rondon, CEP 68900-101, Macapá-AP",
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "site-oficial",
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-021",
+      "name": "JORNAL DO DIA",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Jornal",
+      "phone": "+55 (96) 3217-1100",
+      "whatsapp": null,
+      "email": "comercialjd.2011@gmail.com",
+      "website": "https://www.jdia.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-022",
+      "name": "JORNAL O AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Jornal",
+      "phone": "+55 (96) 99115-9464",
+      "whatsapp": "+5596991159464",
+      "email": "oamapa@hotmail.com",
+      "website": "https://jornaloamapa.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-023",
+      "name": "JORNAL O GUARANI",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Jornal",
+      "phone": "+55 (96) 98112-0161",
+      "whatsapp": "+5596981120161",
+      "email": "redacaojornaloguarani@gmail.com",
+      "website": "https://jornaloguarani.com/",
+      "instagram": "https://www.instagram.com/redacaojornaloguarani/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-024",
+      "name": "G1 AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 3242-1599",
+      "whatsapp": null,
+      "email": "jornaldoamapa@gruporedeamazonica.com.br",
+      "website": "https://g1.globo.com/ap/amapa/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa",
+        "g1"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-025",
+      "name": "AQUI AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 3242-5068",
+      "whatsapp": null,
+      "email": null,
+      "website": "https://aquiamapa.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.91,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-026",
+      "name": "A GAZETA DO AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 99115-2580",
+      "whatsapp": "+5596991152580",
+      "email": "contato@agazetadoamapa.com.br",
+      "website": "https://agazetadoamapa.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-027",
+      "name": "FOLHA DO AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 99181-8588",
+      "whatsapp": "+5596991818588",
+      "email": "contato@folhadoamapa.com",
+      "website": "https://www.folhadoamapa.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-028",
+      "name": "AMAPÁ DIGITAL",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 98114-5711",
+      "whatsapp": "+5596981145711",
+      "email": "comercialamapadigital@gmail.com",
+      "website": "https://amapadigital.net/",
+      "instagram": "https://www.instagram.com/amapadigital/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-029",
+      "name": "O AMAPÁ NEWS",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 98143-8875",
+      "whatsapp": "+5596981438875",
+      "email": "oamapanews.adm@gmail.com",
+      "website": "https://www.oamapanews.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-030",
+      "name": "SELES NAFES",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": "selesnafes@gmail.com",
+      "website": "https://selesnafes.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.91,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-031",
+      "name": "AMAPÁ ON-LINE",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 98406-8040",
+      "whatsapp": "+5596984068040",
+      "email": "amapaonline@gmail.com",
+      "website": "https://amapaonline.com/",
+      "instagram": "https://www.instagram.com/amapaonline/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-032",
+      "name": "AGÊNCIA AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": "suporteapp@prodap.ap.gov.br",
+      "website": "https://agenciaamapa.com.br/",
+      "instagram": "https://www.instagram.com/governoamapa/",
+      "address": null,
+      "completeness": "partial",
+      "score": 0.91,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-033",
+      "name": "CONECTA AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://conectamapa.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.83,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-034",
+      "name": "CAFÉ COM NOTÍCIA",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 99110-5122",
+      "whatsapp": "+5596991105122",
+      "email": "redacaoccn@gmail.com",
+      "website": "https://cafecomnoticia.com.br/",
+      "instagram": "https://www.instagram.com/cafecomnoticia_/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-035",
+      "name": "CORREIO AMAPAENSE",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (21) 97381-7494",
+      "whatsapp": "+5521973817494",
+      "email": "redacao@correioamapaense.com.br",
+      "website": "https://correioamapaense.com.br/",
+      "instagram": "https://www.instagram.com/revistacorreioamapaense/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-036",
+      "name": "PORTAL ALYNE KAISER",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Portal",
+      "phone": "+55 (96) 99111-1916",
+      "whatsapp": "+5596991111916",
+      "email": "contato@alynekaiser.com.br",
+      "website": "https://alynekaiser.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-037",
+      "name": "BLOG ALCINÉA CAVALCANTE",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Blog",
+      "phone": "+55 (96) 98111-0807",
+      "whatsapp": "+5596981110807",
+      "email": "contato@alcilenecavalcante.com.br",
+      "website": "https://www.alcilenecavalcante.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.76,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-038",
+      "name": "BLOG DO ROCHA",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Blog",
+      "phone": "+55 (96) 99147-4038",
+      "whatsapp": "+5596991474038",
+      "email": "elton_vt@yahoo.com.br",
+      "website": "https://www.blogderocha.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.76,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-039",
+      "name": "BLOG CLEIDE FREIRES",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Blog",
+      "phone": "+55 (96) 98133-0721",
+      "whatsapp": "+5596981330721",
+      "email": "cleidefreiresjornalista@gmail.com",
+      "website": "https://www.cleidefreires.com.br/",
+      "instagram": "https://www.instagram.com/cleide_freires09/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.76,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-040",
+      "name": "BLOG CLEBER BARBOSA",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Blog",
+      "phone": "+55 (96) 99157-0022",
+      "whatsapp": "+5596991570022",
+      "email": "contato@cleberbarbosa.net",
+      "website": "https://www.cleberbarbosa.net/",
+      "instagram": "https://www.instagram.com/CleberBarbosaAP/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.76,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-041",
+      "name": "RÁDIO TUCUJU FM 105,3",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Santana",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://tucujufm.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.77,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "tudoradio",
+        "blog-do-rocha"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-042",
+      "name": "RÁDIO ONDA LIVRE 105,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Santana",
+      "type": "Rádio",
+      "phone": "+55 (96) 99144-0832",
+      "whatsapp": "+5596991440832",
+      "email": "edson.fernandes.stn@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-043",
+      "name": "RÁDIO TARUMÃ 104,3 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Santana",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": "radiotaruma.104@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-044",
+      "name": "BLOG SANTANA DO AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Santana",
+      "type": "Blog",
+      "phone": null,
+      "whatsapp": null,
+      "email": "santana.amapa@bol.com.br",
+      "website": "https://santanadoamapa.blogspot.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.68,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-045",
+      "name": "CONEXÃO BRASÍLIA AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Santana",
+      "type": "Portal",
+      "phone": "+55 (96) 99157-0022",
+      "whatsapp": "+5596991570022",
+      "email": "contato@conexaobrasilia.com",
+      "website": "https://www.conexaobrasilia.com/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-046",
+      "name": "JARI NOTÍCIAS",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Laranjal do Jari",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": "jarinoticias@gmail.com",
+      "website": "https://www.jarinoticias.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.91,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "site-oficial",
+        "guia-de-midia"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-047",
+      "name": "VALE FM 87,9",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Laranjal do Jari",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": "contato@valefm.com.br",
+      "website": "https://www.valefm.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.85,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "site-oficial"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-048",
+      "name": "RÁDIO VERDADE 97,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Laranjal do Jari",
+      "type": "Rádio",
+      "phone": "+55 (96) 99163-1749",
+      "whatsapp": "+5596991631749",
+      "email": "missinarioramalho@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-049",
+      "name": "TV VERDADE (SBT) LARANJAL DO JARI",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Laranjal do Jari",
+      "type": "TV",
+      "phone": "+55 (96) 99163-1749",
+      "whatsapp": "+5596991631749",
+      "email": "ministerioverdadejari@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.99,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-050",
+      "name": "RÁDIO NBR JARI",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Laranjal do Jari",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "minimal",
+      "score": 0.72,
+      "confidence": "baixa",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "radios.com.br"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-051",
+      "name": "JORNAL DOS MUNICÍPIOS DO AMAPÁ",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Oiapoque",
+      "type": "Jornal",
+      "phone": "+55 (96) 98400-2809",
+      "whatsapp": "+5596984002809",
+      "email": "jornaldosmunicipios2022@gmail.com",
+      "website": "https://www.jornaldosmunicipiosap.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-052",
+      "name": "RÁDIO OIAPOQUE 91,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Oiapoque",
+      "type": "Rádio",
+      "phone": "+55 (96) 98116-4559",
+      "whatsapp": "+5596981164559",
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-053",
+      "name": "EQUINÓCIO FM 100,9 OIAPOQUE",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Oiapoque",
+      "type": "Rádio",
+      "phone": "+55 (96) 98805-1596",
+      "whatsapp": "+5596988051596",
+      "email": "radiomarcozerofmdeoiapoque@hotmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-054",
+      "name": "RÁDIO FRONTEIRA 104,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Oiapoque",
+      "type": "Rádio",
+      "phone": "+55 (96) 98805-1596",
+      "whatsapp": "+5596988051596",
+      "email": "ronaldotvcidade104@hotmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-055",
+      "name": "RÁDIO PIUARA 100,1 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Porto Grande",
+      "type": "Rádio",
+      "phone": "+55 (96) 98801-6607",
+      "whatsapp": "+5596988016607",
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-056",
+      "name": "RÁDIO AMAPARI 87,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Pedra Branca do Amapari",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": "contato@amaparifm.com.br",
+      "website": "https://amaparifm.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.85,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-057",
+      "name": "RÁDIO CALÇOENE 87,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Calçoene",
+      "type": "Rádio",
+      "phone": "+55 (96) 98119-8391",
+      "whatsapp": "+5596981198391",
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-058",
+      "name": "RÁDIO LOURENÇO 87,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Calçoene",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "minimal",
+      "score": 0.72,
+      "confidence": "baixa",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-059",
+      "name": "RÁDIO CUTIAS 87,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Cutias",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": "contato@radiocutiasfm.com.br",
+      "website": "https://radiocutiasfm.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.85,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-060",
+      "name": "RÁDIO VERDADE AMAPÁ 92,7 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Amapá",
+      "type": "Rádio",
+      "phone": "+55 (96) 98407-8879",
+      "whatsapp": "+5596984078879",
+      "email": "missionarioramalhobomjardim@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.88,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-061",
+      "name": "TV FERREIRA GOMES (SBT)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Ferreira Gomes",
+      "type": "TV",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "minimal",
+      "score": 0.95,
+      "confidence": "baixa",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-062",
+      "name": "RÁDIO VITÓRIA 87,9 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Vitória do Jari",
+      "type": "Rádio",
+      "phone": "+55 (96) 99127-1387",
+      "whatsapp": "+5596991271387",
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-063",
+      "name": "PORTAL PREFEITURA DE MAZAGÃO",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Mazagão",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": "pmmzmazagao@gmail.com",
+      "website": "http://www.mazagao.ap.gov.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.91,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": "Canal institucional — único mapeado no município",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-064",
+      "name": "PORTAL PREFEITURA DE TARTARUGALZINHO",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Tartarugalzinho",
+      "type": "Portal",
+      "phone": "+55 (96) 98410-0607",
+      "whatsapp": "+5596984100607",
+      "email": "gabinete@tartarugalzinho.ap.gov.br",
+      "website": "https://www.tartarugalzinho.ap.gov.br/",
+      "instagram": "https://www.instagram.com/pmt_tartarugal/",
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": "Canal institucional — único mapeado no município",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-065",
+      "name": "PORTAL PREFEITURA DE ITAUBAL",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Itaubal",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://www.itaubal.ap.gov.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.83,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": "Canal institucional — único mapeado no município",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-066",
+      "name": "PORTAL PREFEITURA DE SERRA DO NAVIO",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Serra do Navio",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://www.serradonavio.ap.gov.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.83,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": "Canal institucional — único mapeado no município",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-067",
+      "name": "PORTAL PREFEITURA DE PRACUÚBA",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Pracuúba",
+      "type": "Portal",
+      "phone": null,
+      "whatsapp": null,
+      "email": "prefeiturapracuubaoficial@gmail.com",
+      "website": "https://pracuuba.portal.ap.gov.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.91,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": "Canal institucional — único mapeado no município",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-068",
+      "name": "PORTAL PREFEITURA DE FERREIRA GOMES",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Ferreira Gomes",
+      "type": "Portal",
+      "phone": "+55 (96) 3326-1228",
+      "whatsapp": null,
+      "email": "gabpmfg@gmail.com",
+      "website": "http://www.ferreiragomes.ap.gov.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "complete",
+      "score": 0.99,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "atlas-imprensa"
+      ],
+      "metrics": {
+        "note": null,
+        "region": "amapa"
+      }
+    }
+  ]
+}

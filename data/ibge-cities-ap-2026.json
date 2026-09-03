@@ -1,0 +1,27 @@
+{
+  "version": "ibge-cities-ap-2026",
+  "source": "IBGE — Estimativas da População 2026 (DOU 28/08/2026)",
+  "referenceDate": "2026-07-01",
+  "tableUpdatedAt": "2026-08-28",
+  "note": "Os 16 municípios do Amapá. Painel mostra até 5 principais veículos por cidade (não Top 10).",
+  "state": "Amapá",
+  "uf": "AP",
+  "cities": [
+    { "rank": 1, "name": "Macapá", "population": 491987, "ibgeCode": "1600303" },
+    { "rank": 2, "name": "Santana", "population": 119224, "ibgeCode": "1600600" },
+    { "rank": 3, "name": "Laranjal do Jari", "population": 37781, "ibgeCode": "1600279" },
+    { "rank": 4, "name": "Oiapoque", "population": 31071, "ibgeCode": "1600501" },
+    { "rank": 5, "name": "Mazagão", "population": 23958, "ibgeCode": "1600402" },
+    { "rank": 6, "name": "Porto Grande", "population": 19103, "ibgeCode": "1600535" },
+    { "rank": 7, "name": "Pedra Branca do Amapari", "population": 13971, "ibgeCode": "1600154" },
+    { "rank": 8, "name": "Tartarugalzinho", "population": 13846, "ibgeCode": "1600709" },
+    { "rank": 9, "name": "Vitória do Jari", "population": 11877, "ibgeCode": "1600808" },
+    { "rank": 10, "name": "Calçoene", "population": 11527, "ibgeCode": "1600204" },
+    { "rank": 11, "name": "Amapá", "population": 8447, "ibgeCode": "1600105" },
+    { "rank": 12, "name": "Ferreira Gomes", "population": 7220, "ibgeCode": "1600238" },
+    { "rank": 13, "name": "Itaubal", "population": 6147, "ibgeCode": "1600253" },
+    { "rank": 14, "name": "Serra do Navio", "population": 5019, "ibgeCode": "1600055" },
+    { "rank": 15, "name": "Cutias", "population": 4722, "ibgeCode": "1600212" },
+    { "rank": 16, "name": "Pracuúba", "population": 4053, "ibgeCode": "1600550" }
+  ]
+}

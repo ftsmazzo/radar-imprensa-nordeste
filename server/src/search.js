@@ -1,6 +1,6 @@
 import { getTopCitiesForUf, resolveCityName } from "./cities.js";
 
-export const VALID_UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"];
+export const VALID_UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE", "AP"];
 export const VALID_TYPES = ["Portal", "Rádio", "TV", "Jornal", "Blog"];
 export const VALID_SORTS = ["score", "editorial", "quantitative", "followers", "name", "city", "contacts"];
 export const VALID_BANDS = ["A", "A/B", "B", "B/C"];
@@ -205,6 +205,7 @@ export async function buildFilters(pool, f) {
       name ILIKE $${likeIdx}
       OR COALESCE(ig_full_name,'') ILIKE $${likeIdx}
       OR city ILIKE $${likeIdx}
+      OR COALESCE(address,'') ILIKE $${likeIdx}
       OR COALESCE(instagram,'') ILIKE $${likeIdx}
       OR COALESCE(website,'') ILIKE $${likeIdx}
       OR COALESCE(email,'') ILIKE $${likeIdx}

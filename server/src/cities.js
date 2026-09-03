@@ -4,13 +4,25 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packPath = path.resolve(__dirname, "../../data/ibge-top10-cities-ne-2025.json");
+const apPackPath = path.resolve(__dirname, "../../data/ibge-cities-ap-2026.json");
 
 let pack = null;
+let apPack = null;
 
 function loadPack() {
   if (pack) return pack;
   pack = JSON.parse(fs.readFileSync(packPath, "utf8"));
   return pack;
+}
+
+function loadApPack() {
+  if (apPack) return apPack;
+  apPack = JSON.parse(fs.readFileSync(apPackPath, "utf8"));
+  return apPack;
+}
+
+export function defaultLimitPerCity(uf) {
+  return String(uf || "").toUpperCase() === "AP" ? 5 : 8;
 }
 
 export function normalizeCityName(s) {
@@ -23,11 +35,24 @@ export function normalizeCityName(s) {
 }
 
 export function getTopCitiesForUf(uf) {
+  const code = String(uf || "").toUpperCase();
+  if (code === "AP") {
+    const data = loadApPack();
+    return {
+      uf: "AP",
+      state: data.state || "Amapá",
+      source: data.source,
+      referenceDate: data.referenceDate,
+      tableUpdatedAt: data.tableUpdatedAt,
+      note: data.note,
+      cities: data.cities,
+    };
+  }
   const data = loadPack();
-  const block = data.ufs?.[String(uf || "").toUpperCase()];
+  const block = data.ufs?.[code];
   if (!block) return null;
   return {
-    uf: String(uf).toUpperCase(),
+    uf: code,
     state: block.name,
     source: data.source,
     referenceDate: data.referenceDate,

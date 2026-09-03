@@ -22,6 +22,8 @@ type Vehicle = {
   email: string | null;
   website: string | null;
   instagram: string | null;
+  address?: string | null;
+  whatsapp?: string | null;
   score: number;
   confidence: string;
   instagramFollowers: number | null;
@@ -63,6 +65,7 @@ type Meta = {
   withBio?: number;
   withPhone?: number;
   withEmail?: number;
+  withWhatsapp?: number;
   verified?: number;
   enriched?: number;
   editorial?: number;
@@ -73,8 +76,9 @@ type Meta = {
   apifyConfigured?: boolean;
 };
 
-type ContactFilter = "todos" | "telefone" | "email" | "qualquer" | "ambos";
-type RankingMode = "categoria" | "editorial" | "quantitativo" | "cidades";
+type ContactFilter = "todos" | "telefone" | "email" | "whatsapp" | "qualquer" | "ambos";
+type RankingMode = "categoria" | "editorial" | "quantitativo" | "cidades" | "todos";
+type Region = "NE" | "AP";
 
 type CityGroup = {
   rank: number;
@@ -85,7 +89,7 @@ type CityGroup = {
   vehicles: Vehicle[];
 };
 
-const UFS = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
+const UFS_NE = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
 const TYPES = ["TV", "Rádio", "Jornal", "Portal", "Blog"] as const;
 
 const STATE_NAME: Record<string, string> = {
@@ -98,7 +102,29 @@ const STATE_NAME: Record<string, string> = {
   PI: "Piauí",
   RN: "Rio Grande do Norte",
   SE: "Sergipe",
+  AP: "Amapá",
 };
+
+function digitsOf(s: string) {
+  return String(s).replace(/\D/g, "");
+}
+
+function waMe(whatsapp?: string | null, phone?: string | null) {
+  const raw = whatsapp || "";
+  let d = digitsOf(raw || phone || "");
+  if (!d) return null;
+  if (d.length === 10 || d.length === 11) d = `55${d}`;
+  if (d.length < 12) return null;
+  if (!whatsapp && !/^55\d{2}9\d{8}$/.test(d)) return null;
+  return `https://wa.me/${d}`;
+}
+
+function telHref(phone?: string | null) {
+  if (!phone) return null;
+  let d = digitsOf(phone);
+  if (d.length <= 11) d = `55${d}`;
+  return `tel:+${d}`;
+}
 
 function fmt(n: number | null | undefined) {
   if (n == null) return "—";
@@ -123,6 +149,7 @@ export default function App() {
   const [citiesNote, setCitiesNote] = useState<string | null>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [uf, setUf] = useState("PE");
+  const [region, setRegion] = useState<Region>("NE");
   const [type, setType] = useState("Portal");
   const [mode, setMode] = useState<RankingMode>("quantitativo");
   const [q, setQ] = useState("");
@@ -144,7 +171,7 @@ export default function App() {
   const [dispatchResult, setDispatchResult] = useState<string | null>(null);
 
   const loadMeta = () =>
-    fetch("/api/meta")
+    fetch(region === "AP" ? "/api/meta?uf=AP" : "/api/meta")
       .then((r) => r.json())
       .then(setMeta)
       .catch((e) => setError(String(e)));
@@ -153,7 +180,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     if (mode === "cidades") {
-      return fetch(`/api/cities/top10?uf=${encodeURIComponent(uf)}&limitPerCity=8`)
+      return fetch(`/api/cities/top10?uf=${encodeURIComponent(uf)}&limitPerCity=${region === "AP" ? 5 : 8}`)
         .then(async (r) => {
           if (!r.ok) throw new Error(await r.text());
           return r.json();
@@ -177,6 +204,22 @@ export default function App() {
 
     setCityGroups([]);
     setCitiesNote(null);
+    if (mode === "todos") {
+      return fetch(`/api/search?uf=${encodeURIComponent(uf)}&limit=100&fields=full`)
+        .then(async (r) => {
+          if (!r.ok) throw new Error(await r.text());
+          return r.json();
+        })
+        .then((data: { items: Vehicle[] }) => {
+          const rows = data.items || [];
+          setList(rows);
+          setSelected((prev) => rows.find((d) => d.id === prev?.id) || rows[0] || null);
+          setDispatchIds(rows.map((d) => d.id));
+        })
+        .catch((e) => setError(String(e)))
+        .finally(() => setLoading(false));
+    }
+
     const url =
       mode === "editorial"
         ? `/api/top20/editorial?uf=${encodeURIComponent(uf)}`
@@ -199,18 +242,20 @@ export default function App() {
 
   useEffect(() => {
     loadMeta();
-  }, []);
+  }, [region]);
 
   useEffect(() => {
     loadList();
-  }, [uf, type, mode]);
+  }, [uf, type, mode, region]);
 
   const matchesContact = (v: Vehicle, filter: ContactFilter) => {
     const hasPhone = Boolean(v.phone);
     const hasEmail = Boolean(v.email);
+    const hasWa = Boolean(v.whatsapp || waMe(v.whatsapp, v.phone));
     if (filter === "telefone") return hasPhone;
     if (filter === "email") return hasEmail;
-    if (filter === "qualquer") return hasPhone || hasEmail;
+    if (filter === "whatsapp") return hasWa;
+    if (filter === "qualquer") return hasPhone || hasEmail || hasWa;
     if (filter === "ambos") return hasPhone && hasEmail;
     return true;
   };
@@ -337,25 +382,28 @@ export default function App() {
 
   const exportCsv = () => {
     const header = [
-      "rank", "name", "type", "city", "band", "coverage", "deskScore", "quantitativeRank",
-      "editorialRank", "followers", "deskFollowers", "deskReach", "deskReachUnit",
-      "email", "phone", "instagram", "website", "score",
+      "rank", "name", "type", "city", "address",
+      "email", "email_link", "phone", "phone_link", "whatsapp", "whatsapp_link",
+      "instagram", "website", "score",
     ];
-    const rows = filtered.map((v) =>
-      [
-        v.rank, v.name, v.type, v.city, v.editorialBand ?? "", v.deskCoverage ?? "",
-        v.deskScoreFinal ?? "", v.quantitativeRank ?? "", v.editorialRank ?? "",
-        v.instagramFollowers ?? "", v.deskFollowers ?? "", v.deskReachValue ?? "",
-        v.deskReachUnit ?? "", v.email ?? "", v.phone ?? "", v.instagram ?? "",
-        v.website ?? "", v.score,
+    const rows = filtered.map((v) => {
+      const wa = waMe(v.whatsapp, v.phone);
+      const tel = telHref(v.phone);
+      const mail = v.email ? `mailto:${v.email}` : "";
+      return [
+        v.rank, v.name, v.type, v.city, v.address ?? "",
+        v.email ?? "", mail, v.phone ?? "", tel ?? "", v.whatsapp ?? "", wa ?? "",
+        v.instagram ?? "", v.website ?? "", v.score,
       ]
         .map((c) => `"${String(c).replaceAll('"', '""')}"`)
-        .join(",")
-    );
+        .join(",");
+    });
     const blob = new Blob([[header.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `top20-${uf}-${mode === "categoria" ? type : mode}.csv`;
+    a.download = region === "AP"
+      ? `radar-amapa-${mode === "categoria" ? type : mode}.csv`
+      : `top20-${uf}-${mode === "categoria" ? type : mode}.csv`;
     a.click();
   };
 
@@ -365,8 +413,12 @@ export default function App() {
 
       <header className="top">
         <div className="brand-block">
-          <p className="brand">Radar Imprensa Nordeste</p>
-          <p className="tag">Mapa vivo dos veículos que realmente alcançam audiência</p>
+          <p className="brand">{region === "AP" ? "Radar Imprensa Amapá" : "Radar Imprensa Nordeste"}</p>
+          <p className="tag">
+            {region === "AP"
+              ? "16 municípios · rádio, TV, jornal, portal e blog · CSV com WhatsApp e telefone clicáveis"
+              : "Mapa vivo dos veículos que realmente alcançam audiência"}
+          </p>
         </div>
         {meta && (
           <div className="kpi-row">
@@ -390,6 +442,12 @@ export default function App() {
               <span>Com e-mail</span>
               <strong>{(meta.withEmail ?? 0).toLocaleString("pt-BR")}</strong>
             </div>
+            {(meta.withWhatsapp ?? 0) > 0 && (
+            <div className="kpi">
+              <span>WhatsApp</span>
+              <strong>{(meta.withWhatsapp ?? 0).toLocaleString("pt-BR")}</strong>
+            </div>
+            )}
             <div className="kpi">
               <span>Com seguidores</span>
               <strong>{meta.withFollowers ?? 0}</strong>
@@ -403,10 +461,42 @@ export default function App() {
       </header>
 
       <section className="dock">
+        <div className="type-tabs" role="tablist" aria-label="Região">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={region === "NE"}
+            className={region === "NE" ? "tab on" : "tab"}
+            onClick={() => {
+              setRegion("NE");
+              setUf("PE");
+              setMode("quantitativo");
+            }}
+          >
+            Nordeste
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={region === "AP"}
+            className={region === "AP" ? "tab on" : "tab"}
+            onClick={() => {
+              setRegion("AP");
+              setUf("AP");
+              setMode("cidades");
+            }}
+          >
+            Amapá
+          </button>
+        </div>
         <label>
           Estado
-          <select value={uf} onChange={(e) => setUf(e.target.value)}>
-            {UFS.map((code) => (
+          <select
+            value={uf}
+            onChange={(e) => setUf(e.target.value)}
+            disabled={region === "AP"}
+          >
+            {(region === "AP" ? (["AP"] as const) : UFS_NE).map((code) => (
               <option key={code} value={code}>
                 {code} — {STATE_NAME[code]}
               </option>
@@ -414,6 +504,8 @@ export default function App() {
           </select>
         </label>
         <div className="type-tabs" role="tablist" aria-label="Modo de ranking">
+          {region !== "AP" && (
+            <>
           <button
             type="button"
             role="tab"
@@ -432,6 +524,8 @@ export default function App() {
           >
             Editorial
           </button>
+            </>
+          )}
           <button
             type="button"
             role="tab"
@@ -450,6 +544,17 @@ export default function App() {
           >
             Por cidade
           </button>
+          {region === "AP" && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "todos"}
+            className={mode === "todos" ? "tab on" : "tab"}
+            onClick={() => setMode("todos")}
+          >
+            Todos
+          </button>
+          )}
         </div>
         {mode === "categoria" && (
           <div className="type-tabs" role="tablist" aria-label="Categoria">
@@ -474,8 +579,9 @@ export default function App() {
             onChange={(e) => setContactFilter(e.target.value as ContactFilter)}
           >
             <option value="todos">Todos</option>
-            <option value="qualquer">Telefone ou e-mail</option>
+            <option value="qualquer">Telefone, e-mail ou WhatsApp</option>
             <option value="telefone">Só com telefone</option>
+            <option value="whatsapp">Só com WhatsApp</option>
             <option value="email">Só com e-mail</option>
             <option value="ambos">Telefone e e-mail</option>
           </select>
@@ -509,7 +615,9 @@ export default function App() {
           <div className="panel-title">
             <h1>
               {mode === "cidades"
-                ? `Top 10 cidades · ${STATE_NAME[uf]}`
+                ? `${region === "AP" ? "16 cidades · 5 principais" : "Top 10 cidades"} · ${STATE_NAME[uf]}`
+                : mode === "todos"
+                  ? `Todos os veículos · ${STATE_NAME[uf]}`
                 : `Top 20 · ${STATE_NAME[uf]}${
                     mode === "editorial"
                       ? " · Editorial"
@@ -767,6 +875,12 @@ export default function App() {
               <div className="contacts">
                 <h3>Contatos & canais</h3>
                 <ul>
+                  {selected.address && (
+                    <li>
+                      <span>Endereço</span>
+                      <span>{selected.address}</span>
+                    </li>
+                  )}
                   {selected.email && (
                     <li>
                       <span>E-mail</span>
@@ -776,7 +890,15 @@ export default function App() {
                   {selected.phone && (
                     <li>
                       <span>Telefone</span>
-                      <a href={`tel:${selected.phone}`}>{selected.phone}</a>
+                      <a href={telHref(selected.phone) || `tel:${selected.phone}`}>{selected.phone}</a>
+                    </li>
+                  )}
+                  {waMe(selected.whatsapp, selected.phone) && (
+                    <li>
+                      <span>WhatsApp</span>
+                      <a href={waMe(selected.whatsapp, selected.phone)!} target="_blank" rel="noreferrer">
+                        {selected.whatsapp || "Abrir conversa"}
+                      </a>
                     </li>
                   )}
                   {selected.website && (
@@ -803,7 +925,7 @@ export default function App() {
                       </a>
                     </li>
                   )}
-                  {!selected.email && !selected.phone && !selected.website && !selected.instagram && (
+                  {!selected.email && !selected.phone && !selected.website && !selected.instagram && !selected.whatsapp && !selected.address && (
                     <li className="muted">Sem canais cadastrados</li>
                   )}
                 </ul>

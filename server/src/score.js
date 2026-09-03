@@ -8,6 +8,7 @@ const CAPITALS = new Set([
   "Teresina",
   "Natal",
   "Aracaju",
+  "Macapá",
 ]);
 
 const COMPLETENESS = { minimal: 0.35, partial: 0.7, complete: 1 };
