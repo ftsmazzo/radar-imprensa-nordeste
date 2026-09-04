@@ -2,8 +2,9 @@
  * Descoberta de veículos do Amapá via OpenRouter (Perplexity) + opcional Apify Google Search.
  *
  * Uso:
- *   OPENROUTER_API_KEY=... node scripts/discover-ap-channels.mjs
- *   OPENROUTER_API_KEY=... APIFY_TOKEN=... node scripts/discover-ap-channels.mjs --with-apify
+ *   OPENROUTER_API_KEY=... npm run discover:ap
+ *   OPENROUTER_API_KEY=... APIFY_TOKEN=... npm run discover:ap -- --with-apify
+ *   APIFY_TOKEN=... npm run discover:ap -- --apify-only
  *
  * Modelo sugerido: perplexity/sonar-pro (ou sonar) no OpenRouter.
  * Não grava no Postgres — gera data/vehicles-ap-discovered.json para revisão humana.
@@ -18,6 +19,7 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const APIFY_TOKEN = process.env.APIFY_TOKEN || "";
 const MODEL = process.env.OPENROUTER_MODEL || "perplexity/sonar-pro";
 const withApify = process.argv.includes("--with-apify");
+const apifyOnly = process.argv.includes("--apify-only");
 
 const cities = JSON.parse(
   fs.readFileSync(path.join(root, "data/ibge-cities-ap-2026.json"), "utf8")
@@ -112,13 +114,31 @@ async function apifyGoogle(city) {
   return hits.slice(0, 15);
 }
 
+if (apifyOnly && !APIFY_TOKEN) {
+  console.error("APIFY_TOKEN ausente (modo --apify-only).");
+  process.exit(1);
+}
+if (!apifyOnly && !OPENROUTER_API_KEY) {
+  console.error(`OPENROUTER_API_KEY ausente.
+
+Defina a chave e rode:
+  $env:OPENROUTER_API_KEY="sk-or-..."   # PowerShell
+  npm run discover:ap
+
+Sem OpenRouter, alternativas:
+  APIFY_TOKEN=... npm run discover:ap -- --apify-only
+  npm run import:anatel-ap   # depois de baixar PBFM.csv em data/anatel/
+`);
+  process.exit(1);
+}
+
 const found = [];
 for (const city of cities) {
   process.stdout.write(`· ${city}… `);
   try {
-    const fromLlm = await openRouterAsk(city);
+    const fromLlm = apifyOnly ? [] : await openRouterAsk(city);
     let fromApify = [];
-    if (withApify) fromApify = await apifyGoogle(city);
+    if (withApify || apifyOnly) fromApify = await apifyGoogle(city);
     const batch = [...fromLlm, ...fromApify];
     let n = 0;
     for (const item of batch) {
@@ -137,8 +157,9 @@ for (const city of cities) {
 
 const out = {
   version: "ap-discovered-v1",
-  model: MODEL,
-  withApify,
+  model: apifyOnly ? null : MODEL,
+  withApify: withApify || apifyOnly,
+  apifyOnly,
   generatedAt: new Date().toISOString(),
   count: found.length,
   note: "Revisar manualmente antes de mesclar em vehicles-ap-v1.json",

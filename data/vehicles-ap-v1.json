@@ -1,23 +1,23 @@
 {
   "version": "ap-desk-v1",
-  "importedAt": "2026-09-03T19:36:55.276Z",
+  "importedAt": "2026-09-04T19:18:17.726Z",
   "methodology": [
     "Levantamento web público (Atlas da Imprensa, Guia de Mídia, sites oficiais, IBGE 2026).",
     "Não há a base v1 do Nordeste para o Amapá; contatos só entram se publicados.",
     "Municípios sem emissora/portal independente: portal institucional da prefeitura, marcado nas métricas.",
     "WhatsApp preenchido quando o telefone público é celular ou quando a fonte cita WhatsApp."
   ],
-  "count": 69,
+  "count": 72,
   "byType": {
     "TV": 8,
-    "Rádio": 30,
+    "Rádio": 33,
     "Jornal": 5,
     "Portal": 21,
     "Blog": 5
   },
   "byCity": {
-    "Macapá": 40,
-    "Santana": 5,
+    "Macapá": 41,
+    "Santana": 6,
     "Laranjal do Jari": 5,
     "Oiapoque": 4,
     "Porto Grande": 1,
@@ -27,8 +27,8 @@
     "Amapá": 1,
     "Ferreira Gomes": 2,
     "Vitória do Jari": 1,
+    "Tartarugalzinho": 2,
     "Mazagão": 1,
-    "Tartarugalzinho": 1,
     "Itaubal": 2,
     "Serra do Navio": 1,
     "Pracuúba": 1
@@ -300,17 +300,16 @@
       "type": "Rádio",
       "phone": null,
       "whatsapp": null,
-      "email": "radio@unifap.br",
+      "email": null,
       "website": "https://www2.unifap.br/",
       "instagram": null,
-      "address": "Universidade Federal do Amapá, Campus Marco Zero, Rod. Josmar Chaves Pinto, km 02, Jardim Marco Zero, Macapá - AP",
+      "address": null,
       "completeness": "partial",
-      "score": 0.8,
+      "score": 0.77,
       "confidence": "média",
       "scoreVersion": "ap-desk-v1",
       "sources": [
-        "tudoradio",
-        "websearch-2026-09"
+        "tudoradio"
       ],
       "metrics": {
         "note": null,
@@ -851,19 +850,18 @@
       "state": "Amapá",
       "city": "Macapá",
       "type": "Portal",
-      "phone": "+55 (96) 99195-4745",
-      "whatsapp": "+5596991954745",
-      "email": "maxlimamiranda@gmail.com",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
       "website": "https://conectamapa.com/",
-      "instagram": "https://www.instagram.com/conectamapa",
+      "instagram": null,
       "address": null,
-      "completeness": "complete",
-      "score": 0.9,
+      "completeness": "partial",
+      "score": 0.83,
       "confidence": "média",
       "scoreVersion": "ap-desk-v1",
       "sources": [
-        "atlas-imprensa",
-        "websearch-2026-09"
+        "atlas-imprensa"
       ],
       "metrics": {
         "note": null,
@@ -1399,6 +1397,32 @@
     },
     {
       "id": "ap-055",
+      "name": "RÁDIO AÇÃO 92,3 FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Santana",
+      "type": "Rádio",
+      "phone": "+55 (96) 3281-2550",
+      "whatsapp": "+5596991000642",
+      "email": "contato@jovemsantanafm.com.br",
+      "website": null,
+      "instagram": null,
+      "address": "Avenida Rio Branco, 3748 — Fonte Nova, Santana-AP",
+      "completeness": "complete",
+      "score": 0.88,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "tudoradio",
+        "radios.com.br"
+      ],
+      "metrics": {
+        "note": "Antes Rádio Inorte / Jovem Santana FM",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-056",
       "name": "RÁDIO PIUARA 100,1 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1423,7 +1447,7 @@
       }
     },
     {
-      "id": "ap-056",
+      "id": "ap-057",
       "name": "RÁDIO AMAPARI 87,9 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1448,7 +1472,7 @@
       }
     },
     {
-      "id": "ap-057",
+      "id": "ap-058",
       "name": "RÁDIO CALÇOENE 87,9 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1473,7 +1497,7 @@
       }
     },
     {
-      "id": "ap-058",
+      "id": "ap-059",
       "name": "RÁDIO LOURENÇO 87,9 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1498,7 +1522,7 @@
       }
     },
     {
-      "id": "ap-059",
+      "id": "ap-060",
       "name": "RÁDIO CUTIAS 87,9 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1523,7 +1547,7 @@
       }
     },
     {
-      "id": "ap-060",
+      "id": "ap-061",
       "name": "RÁDIO VERDADE AMAPÁ 92,7 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1548,7 +1572,7 @@
       }
     },
     {
-      "id": "ap-061",
+      "id": "ap-062",
       "name": "TV FERREIRA GOMES (SBT)",
       "uf": "AP",
       "state": "Amapá",
@@ -1573,7 +1597,7 @@
       }
     },
     {
-      "id": "ap-062",
+      "id": "ap-063",
       "name": "RÁDIO VITÓRIA 87,9 FM",
       "uf": "AP",
       "state": "Amapá",
@@ -1598,7 +1622,59 @@
       }
     },
     {
-      "id": "ap-063",
+      "id": "ap-064",
+      "name": "TUMUCUMAQUE FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Tartarugalzinho",
+      "type": "Rádio",
+      "phone": "+55 (96) 3283-1150",
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": "Avenida Mãe Verônica, 392 — Central, CEP 68990-000, Tartarugalzinho-AP",
+      "completeness": "partial",
+      "score": 0.8,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "cnpj",
+        "desk-2026-09"
+      ],
+      "metrics": {
+        "note": "Associada à Associação Comunitária dos Moradores de Tartarugalzinho — confirmar se ainda no ar",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-065",
+      "name": "RÁDIO MARESOL WEB",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Macapá",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://www.radiomaresol.com.br/",
+      "instagram": null,
+      "address": null,
+      "completeness": "partial",
+      "score": 0.77,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "radio-browser",
+        "zeno"
+      ],
+      "metrics": {
+        "note": "Web rádio com sede/stream em Macapá",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-066",
       "name": "PORTAL PREFEITURA DE MAZAGÃO",
       "uf": "AP",
       "state": "Amapá",
@@ -1618,12 +1694,12 @@
         "atlas-imprensa"
       ],
       "metrics": {
-        "note": "Canal institucional — único mapeado no município",
+        "note": "Canal institucional",
         "region": "amapa"
       }
     },
     {
-      "id": "ap-064",
+      "id": "ap-067",
       "name": "PORTAL PREFEITURA DE TARTARUGALZINHO",
       "uf": "AP",
       "state": "Amapá",
@@ -1643,12 +1719,37 @@
         "atlas-imprensa"
       ],
       "metrics": {
-        "note": "Canal institucional — único mapeado no município",
+        "note": "Canal institucional",
         "region": "amapa"
       }
     },
     {
-      "id": "ap-065",
+      "id": "ap-068",
+      "name": "ITAUBAL FM 87,9",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Itaubal",
+      "type": "Rádio",
+      "phone": "+55 (96) 98433-9488",
+      "whatsapp": "+5596984339488",
+      "email": "itaubalfm879@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": "Rua Orival C. Palmerim, 567, Itaubal - AP",
+      "completeness": "complete",
+      "score": 0.88,
+      "confidence": "média-alta",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "websearch-2026-09"
+      ],
+      "metrics": {
+        "note": "Levantamento complementar 2026-09",
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-069",
       "name": "PORTAL PREFEITURA DE ITAUBAL",
       "uf": "AP",
       "state": "Amapá",
@@ -1668,12 +1769,12 @@
         "atlas-imprensa"
       ],
       "metrics": {
-        "note": "Canal institucional — único mapeado no município",
+        "note": "Canal institucional",
         "region": "amapa"
       }
     },
     {
-      "id": "ap-066",
+      "id": "ap-070",
       "name": "PORTAL PREFEITURA DE SERRA DO NAVIO",
       "uf": "AP",
       "state": "Amapá",
@@ -1693,12 +1794,12 @@
         "atlas-imprensa"
       ],
       "metrics": {
-        "note": "Canal institucional — único mapeado no município",
+        "note": "Canal institucional",
         "region": "amapa"
       }
     },
     {
-      "id": "ap-067",
+      "id": "ap-071",
       "name": "PORTAL PREFEITURA DE PRACUÚBA",
       "uf": "AP",
       "state": "Amapá",
@@ -1718,12 +1819,12 @@
         "atlas-imprensa"
       ],
       "metrics": {
-        "note": "Canal institucional — único mapeado no município",
+        "note": "Canal institucional",
         "region": "amapa"
       }
     },
     {
-      "id": "ap-068",
+      "id": "ap-072",
       "name": "PORTAL PREFEITURA DE FERREIRA GOMES",
       "uf": "AP",
       "state": "Amapá",
@@ -1744,31 +1845,6 @@
       ],
       "metrics": {
         "note": null,
-        "region": "amapa"
-      }
-    },
-    {
-      "id": "ap-069",
-      "name": "ITAUBAL FM 87,9",
-      "uf": "AP",
-      "state": "Amapá",
-      "city": "Itaubal",
-      "type": "Rádio",
-      "phone": "+55 (96) 98433-9488",
-      "whatsapp": "+5596984339488",
-      "email": "itaubalfm879@gmail.com",
-      "website": null,
-      "instagram": null,
-      "address": "Rua Orival C. Palmerim, 567, Itaubal - AP",
-      "completeness": "partial",
-      "score": 0.85,
-      "confidence": "média",
-      "scoreVersion": "ap-desk-v1",
-      "sources": [
-        "websearch-2026-09"
-      ],
-      "metrics": {
-        "note": "Adicionada em levantamento complementar (2026-09) — Itaubal tinha só o portal institucional da prefeitura.",
         "region": "amapa"
       }
     }

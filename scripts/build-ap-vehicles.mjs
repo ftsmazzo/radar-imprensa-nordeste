@@ -72,6 +72,9 @@ const raw = [
   { city: "Oiapoque", type: "Rádio", name: "EQUINÓCIO FM 100,9 OIAPOQUE", phone: "+55 (96) 98805-1596", email: "radiomarcozerofmdeoiapoque@hotmail.com", sources: ["atlas-imprensa"] },
   { city: "Oiapoque", type: "Rádio", name: "RÁDIO FRONTEIRA 104,9 FM", phone: "+55 (96) 98805-1596", email: "ronaldotvcidade104@hotmail.com", sources: ["atlas-imprensa"] },
 
+  // —— Santana extras ——
+  { city: "Santana", type: "Rádio", name: "RÁDIO AÇÃO 92,3 FM", phone: "+55 (96) 3281-2550", whatsapp: "+55 (96) 99100-0642", email: "contato@jovemsantanafm.com.br", address: "Avenida Rio Branco, 3748 — Fonte Nova, Santana-AP", sources: ["tudoradio", "radios.com.br"], note: "Antes Rádio Inorte / Jovem Santana FM" },
+
   // —— Interior ——
   { city: "Porto Grande", type: "Rádio", name: "RÁDIO PIUARA 100,1 FM", phone: "+55 (96) 98801-6607", sources: ["atlas-imprensa"] },
   { city: "Pedra Branca do Amapari", type: "Rádio", name: "RÁDIO AMAPARI 87,9 FM", email: "contato@amaparifm.com.br", website: "https://amaparifm.com.br/", sources: ["atlas-imprensa"] },
@@ -81,13 +84,16 @@ const raw = [
   { city: "Amapá", type: "Rádio", name: "RÁDIO VERDADE AMAPÁ 92,7 FM", phone: "+55 (96) 98407-8879", email: "missionarioramalhobomjardim@gmail.com", sources: ["atlas-imprensa"] },
   { city: "Ferreira Gomes", type: "TV", name: "TV FERREIRA GOMES (SBT)", sources: ["atlas-imprensa"] },
   { city: "Vitória do Jari", type: "Rádio", name: "RÁDIO VITÓRIA 87,9 FM", phone: "+55 (96) 99127-1387", sources: ["atlas-imprensa"] },
+  { city: "Tartarugalzinho", type: "Rádio", name: "TUMUCUMAQUE FM", phone: "+55 (96) 3283-1150", address: "Avenida Mãe Verônica, 392 — Central, CEP 68990-000, Tartarugalzinho-AP", sources: ["cnpj", "desk-2026-09"], note: "Associada à Associação Comunitária dos Moradores de Tartarugalzinho — confirmar se ainda no ar" },
+  { city: "Macapá", type: "Rádio", name: "RÁDIO MARESOL WEB", website: "https://www.radiomaresol.com.br/", sources: ["radio-browser", "zeno"], note: "Web rádio com sede/stream em Macapá" },
 
-  // Cidades sem emissora comercial mapeada: portal institucional (único canal local público encontrado)
-  { city: "Mazagão", type: "Portal", name: "PORTAL PREFEITURA DE MAZAGÃO", email: "pmmzmazagao@gmail.com", website: "http://www.mazagao.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional — único mapeado no município" },
-  { city: "Tartarugalzinho", type: "Portal", name: "PORTAL PREFEITURA DE TARTARUGALZINHO", phone: "+55 (96) 98410-0607", email: "gabinete@tartarugalzinho.ap.gov.br", website: "https://www.tartarugalzinho.ap.gov.br/", instagram: "https://www.instagram.com/pmt_tartarugal/", sources: ["atlas-imprensa"], note: "Canal institucional — único mapeado no município" },
-  { city: "Itaubal", type: "Portal", name: "PORTAL PREFEITURA DE ITAUBAL", website: "https://www.itaubal.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional — único mapeado no município" },
-  { city: "Serra do Navio", type: "Portal", name: "PORTAL PREFEITURA DE SERRA DO NAVIO", website: "https://www.serradonavio.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional — único mapeado no município" },
-  { city: "Pracuúba", type: "Portal", name: "PORTAL PREFEITURA DE PRACUÚBA", email: "prefeiturapracuubaoficial@gmail.com", website: "https://pracuuba.portal.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional — único mapeado no município" },
+  // Cidades sem emissora comercial mapeada: portal institucional (canal local público)
+  { city: "Mazagão", type: "Portal", name: "PORTAL PREFEITURA DE MAZAGÃO", email: "pmmzmazagao@gmail.com", website: "http://www.mazagao.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional" },
+  { city: "Tartarugalzinho", type: "Portal", name: "PORTAL PREFEITURA DE TARTARUGALZINHO", phone: "+55 (96) 98410-0607", email: "gabinete@tartarugalzinho.ap.gov.br", website: "https://www.tartarugalzinho.ap.gov.br/", instagram: "https://www.instagram.com/pmt_tartarugal/", sources: ["atlas-imprensa"], note: "Canal institucional" },
+  { city: "Itaubal", type: "Rádio", name: "ITAUBAL FM 87,9", phone: "+55 (96) 98433-9488", whatsapp: "+5596984339488", email: "itaubalfm879@gmail.com", address: "Rua Orival C. Palmerim, 567, Itaubal - AP", sources: ["websearch-2026-09"], note: "Levantamento complementar 2026-09" },
+  { city: "Itaubal", type: "Portal", name: "PORTAL PREFEITURA DE ITAUBAL", website: "https://www.itaubal.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional" },
+  { city: "Serra do Navio", type: "Portal", name: "PORTAL PREFEITURA DE SERRA DO NAVIO", website: "https://www.serradonavio.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional" },
+  { city: "Pracuúba", type: "Portal", name: "PORTAL PREFEITURA DE PRACUÚBA", email: "prefeiturapracuubaoficial@gmail.com", website: "https://pracuuba.portal.ap.gov.br/", sources: ["atlas-imprensa"], note: "Canal institucional" },
   { city: "Ferreira Gomes", type: "Portal", name: "PORTAL PREFEITURA DE FERREIRA GOMES", phone: "+55 (96) 3326-1228", email: "gabpmfg@gmail.com", website: "http://www.ferreiragomes.ap.gov.br/", sources: ["atlas-imprensa"] },
 ];
 
