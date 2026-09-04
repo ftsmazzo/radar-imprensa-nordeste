@@ -167,7 +167,16 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+type Theme = "light" | "dark";
+
+function readInitialTheme(): Theme {
+  if (typeof document === "undefined") return "dark";
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "light" || attr === "dark" ? attr : "dark";
+}
+
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(readInitialTheme);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [list, setList] = useState<Vehicle[]>([]);
   const [cityGroups, setCityGroups] = useState<CityGroup[]>([]);
@@ -179,6 +188,7 @@ export default function App() {
   const [mode, setMode] = useState<RankingMode>("quantitativo");
   const [q, setQ] = useState("");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("todos");
+  const [cityFocus, setCityFocus] = useState<string>("");
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -194,6 +204,19 @@ export default function App() {
   const [dispatchIds, setDispatchIds] = useState<string[]>([]);
   const [dispatchBusy, setDispatchBusy] = useState(false);
   const [dispatchResult, setDispatchResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem("radar-theme", theme);
+    } catch {
+      // localStorage indisponível (modo privado etc.) — segue sem persistir
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    setCityFocus("");
+  }, [mode, uf]);
 
   useEffect(() => {
     fetch("/api/config")
@@ -618,17 +641,30 @@ export default function App() {
                 : "Mapa vivo dos veículos que realmente alcançam audiência")}
           </p>
         </div>
-        {meta && (
-          <div className="kpi-row">
-            {kpis.map((k) => (
-              <div className="kpi" key={k.label}>
-                <span>{k.label}</span>
-                <strong>{k.value}</strong>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="top-right">
+          {meta && (
+            <div className="kpi-row">
+              {kpis.map((k) => (
+                <div className="kpi" key={k.label}>
+                  <span>{k.label}</span>
+                  <strong>{k.value}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+            title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
+        </div>
       </header>
+
+      <div className="equator-line" aria-hidden />
 
       <section className="dock">
         {ufOptions.length > 1 && (
@@ -712,6 +748,26 @@ export default function App() {
             ))}
           </div>
         )}
+        {mode === "cidades" && cityGroups.length > 0 && (
+          <>
+            <label className="city-jump">
+              Ir para cidade
+              <select value={cityFocus} onChange={(e) => setCityFocus(e.target.value)}>
+                <option value="">Todas as cidades</option>
+                {cityGroups.map((g) => (
+                  <option key={g.name} value={g.name}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {cityFocus && (
+              <button type="button" className="city-jump-reset" onClick={() => setCityFocus("")}>
+                Ver todas
+              </button>
+            )}
+          </>
+        )}
         <label>
           Contato
           <select
@@ -789,7 +845,9 @@ export default function App() {
 
           {mode === "cidades" ? (
             <div className="city-blocks">
-              {!loading && region === "AP" ? (
+              {!loading && cityFocus ? (
+                filteredCityGroups.filter((g) => g.name === cityFocus).map(renderCityBlock)
+              ) : !loading && region === "AP" ? (
                 <>
                   <h3 className="city-group-heading">
                     Top {AP_TOP_CITIES_COUNT} municípios
