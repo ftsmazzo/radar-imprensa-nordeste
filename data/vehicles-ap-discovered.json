@@ -1,0 +1,69 @@
+{
+  "version": "ap-discovered-v1",
+  "model": "web-research-manual-2026-09",
+  "generatedAt": "2026-09-04T00:00:00.000Z",
+  "count": 4,
+  "note": "Revisar manualmente (idealmente com uma ligação de confirmação) antes de mesclar em vehicles-ap-v1.json. Diferente do ITAUBAL FM (já mesclado), estes têm contato incompleto ou status de funcionamento incerto.",
+  "items": [
+    {
+      "name": "TUMUCUMAQUE FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Tartarugalzinho",
+      "type": "Rádio",
+      "phone": "+55 (96) 3283-1150",
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": "Avenida Mãe Verônica, 392, Central, Tartarugalzinho - AP, CEP 68990-000",
+      "confidenceNote": "média — dado vem de cadastro de CNPJ (Associação Comunitária dos Moradores de Tartarugalzinho), não de fonte jornalística direta. Confirmar se a rádio ainda está no ar antes de publicar.",
+      "sourceNote": "maiscnpj.com.br (CNPJ 09.369.002/0001-27)"
+    },
+    {
+      "name": "RÁDIO MANGANÊS FM",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Serra do Navio",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": "https://www.radiomanganesfm.webradios.net/",
+      "instagram": null,
+      "address": null,
+      "confidenceNote": "baixa — associação fundada em 2004; há indício de que a situação cadastral do CNPJ pode estar baixada/inativa. Confirmar se ainda opera antes de publicar.",
+      "sourceNote": "radios.com.br + consultas.plus (CNPJ 06.118.477/0001-52, Associação da Rádio Comunitária Serrana Manganês)"
+    },
+    {
+      "name": "RÁDIO NOVA MAZAGÃO AM (ANTENA 1)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Mazagão",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "confidenceNote": "baixa — existência confirmada (outorga AM 1310 kHz / operadora Beija Flor Radiodifusão Ltda) mas nenhum telefone/e-mail/site público encontrado. Precisa de contato direto para completar o cadastro.",
+      "sourceNote": "listas de outorgas ANATEL/MCTIC + radios.com.br"
+    },
+    {
+      "name": "ASSOCIAÇÃO COMUNITÁRIA DE DESENVOLVIMENTO ARTÍSTICO E CULTURAL DE PRACUÚBA (rádio comunitária)",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Pracuúba",
+      "type": "Rádio",
+      "phone": null,
+      "whatsapp": null,
+      "email": null,
+      "website": null,
+      "instagram": null,
+      "address": null,
+      "confidenceNote": "baixa — existência da outorga confirmada junto ao Ministério das Comunicações, mas frequência e contato não localizados nesta busca. Precisa de checagem direta (prefeitura ou ANATEL).",
+      "sourceNote": "listas de rádios comunitárias autorizadas do Amapá (Ministério das Comunicações)"
+    }
+  ]
+}

@@ -7,10 +7,10 @@
     "Municípios sem emissora/portal independente: portal institucional da prefeitura, marcado nas métricas.",
     "WhatsApp preenchido quando o telefone público é celular ou quando a fonte cita WhatsApp."
   ],
-  "count": 68,
+  "count": 69,
   "byType": {
     "TV": 8,
-    "Rádio": 29,
+    "Rádio": 30,
     "Jornal": 5,
     "Portal": 21,
     "Blog": 5
@@ -29,7 +29,7 @@
     "Vitória do Jari": 1,
     "Mazagão": 1,
     "Tartarugalzinho": 1,
-    "Itaubal": 1,
+    "Itaubal": 2,
     "Serra do Navio": 1,
     "Pracuúba": 1
   },
@@ -300,16 +300,17 @@
       "type": "Rádio",
       "phone": null,
       "whatsapp": null,
-      "email": null,
+      "email": "radio@unifap.br",
       "website": "https://www2.unifap.br/",
       "instagram": null,
-      "address": null,
+      "address": "Universidade Federal do Amapá, Campus Marco Zero, Rod. Josmar Chaves Pinto, km 02, Jardim Marco Zero, Macapá - AP",
       "completeness": "partial",
-      "score": 0.77,
+      "score": 0.8,
       "confidence": "média",
       "scoreVersion": "ap-desk-v1",
       "sources": [
-        "tudoradio"
+        "tudoradio",
+        "websearch-2026-09"
       ],
       "metrics": {
         "note": null,
@@ -850,18 +851,19 @@
       "state": "Amapá",
       "city": "Macapá",
       "type": "Portal",
-      "phone": null,
-      "whatsapp": null,
-      "email": null,
+      "phone": "+55 (96) 99195-4745",
+      "whatsapp": "+5596991954745",
+      "email": "maxlimamiranda@gmail.com",
       "website": "https://conectamapa.com/",
-      "instagram": null,
+      "instagram": "https://www.instagram.com/conectamapa",
       "address": null,
-      "completeness": "partial",
-      "score": 0.83,
+      "completeness": "complete",
+      "score": 0.9,
       "confidence": "média",
       "scoreVersion": "ap-desk-v1",
       "sources": [
-        "atlas-imprensa"
+        "atlas-imprensa",
+        "websearch-2026-09"
       ],
       "metrics": {
         "note": null,
@@ -1742,6 +1744,31 @@
       ],
       "metrics": {
         "note": null,
+        "region": "amapa"
+      }
+    },
+    {
+      "id": "ap-069",
+      "name": "ITAUBAL FM 87,9",
+      "uf": "AP",
+      "state": "Amapá",
+      "city": "Itaubal",
+      "type": "Rádio",
+      "phone": "+55 (96) 98433-9488",
+      "whatsapp": "+5596984339488",
+      "email": "itaubalfm879@gmail.com",
+      "website": null,
+      "instagram": null,
+      "address": "Rua Orival C. Palmerim, 567, Itaubal - AP",
+      "completeness": "partial",
+      "score": 0.85,
+      "confidence": "média",
+      "scoreVersion": "ap-desk-v1",
+      "sources": [
+        "websearch-2026-09"
+      ],
+      "metrics": {
+        "note": "Adicionada em levantamento complementar (2026-09) — Itaubal tinha só o portal institucional da prefeitura.",
         "region": "amapa"
       }
     }
