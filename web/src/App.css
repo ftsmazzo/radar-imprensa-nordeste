@@ -316,6 +316,95 @@ a { color: var(--sand); }
   padding: 0.45rem;
 }
 
+.city-group-heading {
+  margin: 0.2rem 0.65rem -0.15rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 550;
+  color: var(--sand);
+}
+
+.city-compact-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+  padding: 0 0.65rem 0.2rem;
+}
+
+.city-compact {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.55rem 0.6rem;
+}
+
+.city-compact-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.city-compact-head strong { font-size: 0.9rem; }
+.city-compact-head .muted { font-size: 0.72rem; }
+
+.city-empty-inline {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.city-compact-vehicles {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.chip-veh {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 0.32rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.chip-veh:hover { border-color: var(--line); }
+.chip-veh.active {
+  border-color: rgba(224, 122, 58, 0.55);
+  background: rgba(224, 122, 58, 0.08);
+}
+.chip-veh span { margin-left: auto; font-size: 0.72rem; }
+.chip-veh span + span { margin-left: 0.4rem; }
+.chip-veh .ok { color: var(--teal); }
+.chip-veh .miss { opacity: 0.5; }
+
+.badge-note {
+  display: inline-grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-left: 0.35rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #1b1008;
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 800;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.institutional-note {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .card {
   display: grid;
   grid-template-columns: 2.4rem 3rem 1fr auto;
@@ -439,6 +528,7 @@ a { color: var(--sand); }
   gap: 0.55rem;
   margin-bottom: 1rem;
 }
+.stat-grid.ap { grid-template-columns: repeat(2, 1fr); }
 .stat-grid div {
   border: 1px solid var(--line);
   border-radius: 12px;

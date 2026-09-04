@@ -14,6 +14,7 @@ export const REGION_META = {
     defaultUf: "PE",
     defaultMode: "quantitativo",
     limitPerCity: 8,
+    categoryLimit: 20,
     footer: "Inventário Nordeste · Enrichment Apify · ranking editorial · disparo WhatsApp/e-mail",
   },
   AP: {
@@ -24,6 +25,7 @@ export const REGION_META = {
     defaultUf: "AP",
     defaultMode: "cidades",
     limitPerCity: 5,
+    categoryLimit: 100,
     footer: "Inventário Amapá (desk research) · CSV clicável · disparo WhatsApp/e-mail via n8n",
   },
 };

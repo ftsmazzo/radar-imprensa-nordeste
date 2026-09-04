@@ -473,6 +473,7 @@ function mapVehicle(row, rank = null) {
     deskScoreEvidence: row.desk_score_evidence != null ? Number(row.desk_score_evidence) : null,
     deskCoverage: row.desk_coverage || null,
     quantitativeRank: row.quantitative_rank != null ? Number(row.quantitative_rank) : null,
+    note: (row.metrics && row.metrics.note) || null,
   };
 }
 
@@ -686,13 +687,14 @@ app.get("/api/top20", async (req, res) => {
   const uf = String(req.query.uf || "").toUpperCase();
   const type = String(req.query.type || "");
   if (!uf || !type) return res.status(400).json({ error: "uf and type are required" });
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 20));
 
   const { rows } = await pool.query(
     `SELECT * FROM vehicles
      WHERE uf = $1 AND type = $2
      ORDER BY score DESC, editorial_rank ASC NULLS LAST, instagram_followers DESC NULLS LAST, name ASC
-     LIMIT 20`,
-    [uf, type]
+     LIMIT $3`,
+    [uf, type, limit]
   );
   res.json(rows.map((r, i) => mapVehicle(r, i + 1)));
 });
@@ -741,46 +743,58 @@ app.get("/api/cities/top10", async (req, res) => {
   const limitPerCity = Math.min(20, Math.max(1, Number(req.query.limitPerCity) || defaultLimitPerCity(uf)));
 
   try {
-    const { rows: cityRows } = await pool.query(
-      `SELECT DISTINCT city FROM vehicles WHERE uf = $1 AND city IS NOT NULL AND city <> ''`,
+    const { rows: cityCountRows } = await pool.query(
+      `SELECT city, COUNT(*)::int AS c FROM vehicles
+       WHERE uf = $1 AND city IS NOT NULL AND city <> ''
+       GROUP BY city`,
       [uf]
     );
-    const inventory = cityRows.map((r) => r.city);
+    const inventory = cityCountRows.map((r) => r.city);
+    const inventoryCountByCity = new Map(cityCountRows.map((r) => [r.city, r.c]));
 
-    const cities = [];
-    for (const c of meta.cities) {
-      const matched = resolveCityName(c.name, inventory);
-      let vehicles = [];
-      let inventoryCount = 0;
-      if (matched) {
-        const { rows } = await pool.query(
-          `SELECT * FROM vehicles
-           WHERE uf = $1 AND city = $2
-           ORDER BY
-             quantitative_rank ASC NULLS LAST,
-             desk_score_final DESC NULLS LAST,
-             score DESC,
-             instagram_followers DESC NULLS LAST,
-             name ASC
-           LIMIT $3`,
-          [uf, matched, limitPerCity]
-        );
-        vehicles = rows.map((r, i) => mapVehicle(r, i + 1));
-        const countRes = await pool.query(
-          `SELECT COUNT(*)::int AS c FROM vehicles WHERE uf = $1 AND city = $2`,
-          [uf, matched]
-        );
-        inventoryCount = countRes.rows[0]?.c || 0;
+    const resolved = meta.cities.map((c) => ({
+      ...c,
+      matchedCity: resolveCityName(c.name, inventory),
+    }));
+    const matchedCities = [...new Set(resolved.map((c) => c.matchedCity).filter(Boolean))];
+
+    const vehiclesByCity = new Map();
+    if (matchedCities.length) {
+      const { rows } = await pool.query(
+        `SELECT * FROM (
+           SELECT *, ROW_NUMBER() OVER (
+             PARTITION BY city
+             ORDER BY
+               quantitative_rank ASC NULLS LAST,
+               desk_score_final DESC NULLS LAST,
+               score DESC,
+               instagram_followers DESC NULLS LAST,
+               name ASC
+           ) AS rn
+           FROM vehicles
+           WHERE uf = $1 AND city = ANY($2::text[])
+         ) ranked
+         WHERE rn <= $3
+         ORDER BY city, rn`,
+        [uf, matchedCities, limitPerCity]
+      );
+      for (const row of rows) {
+        if (!vehiclesByCity.has(row.city)) vehiclesByCity.set(row.city, []);
+        vehiclesByCity.get(row.city).push(row);
       }
-      cities.push({
+    }
+
+    const cities = resolved.map((c) => {
+      const rows = c.matchedCity ? vehiclesByCity.get(c.matchedCity) || [] : [];
+      return {
         rank: c.rank,
         name: c.name,
-        matchedCity: matched,
+        matchedCity: c.matchedCity,
         population: c.population,
-        inventoryCount,
-        vehicles,
-      });
-    }
+        inventoryCount: c.matchedCity ? inventoryCountByCity.get(c.matchedCity) || 0 : 0,
+        vehicles: rows.map((r, i) => mapVehicle(r, i + 1)),
+      };
+    });
 
     res.json({
       uf: meta.uf,

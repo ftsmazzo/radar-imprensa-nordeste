@@ -24,6 +24,8 @@ type Vehicle = {
   instagram: string | null;
   address?: string | null;
   whatsapp?: string | null;
+  completeness?: string | null;
+  note?: string | null;
   score: number;
   confidence: string;
   instagramFollowers: number | null;
@@ -88,6 +90,7 @@ type AppConfig = {
   defaultUf: string;
   defaultMode: RankingMode;
   limitPerCity: number;
+  categoryLimit?: number;
   footer: string;
   dispatchConfigured: boolean;
   apifyConfigured: boolean;
@@ -104,6 +107,14 @@ type CityGroup = {
 
 const UFS_NE = ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] as const;
 const TYPES = ["TV", "Rádio", "Jornal", "Portal", "Blog"] as const;
+const AP_TOTAL_MUNICIPALITIES = 16;
+const AP_TOP_CITIES_COUNT = 3;
+
+const COMPLETENESS_LABEL: Record<string, string> = {
+  minimal: "Mínima",
+  partial: "Parcial",
+  complete: "Completa",
+};
 
 const STATE_NAME: Record<string, string> = {
   AL: "Alagoas",
@@ -254,7 +265,11 @@ export default function App() {
         ? `/api/top20/editorial?uf=${encodeURIComponent(uf)}`
         : mode === "quantitativo"
           ? `/api/top20/quantitative?uf=${encodeURIComponent(uf)}`
-          : `/api/top20?${new URLSearchParams({ uf, type })}`;
+          : `/api/top20?${new URLSearchParams({
+              uf,
+              type,
+              ...(config.categoryLimit ? { limit: String(config.categoryLimit) } : {}),
+            })}`;
     return fetch(url)
       .then(async (r) => {
         if (!r.ok) throw new Error(await r.text());
@@ -315,6 +330,35 @@ export default function App() {
       vehicles: g.vehicles.filter((v) => ids.has(v.id)),
     }));
   }, [mode, cityGroups, filtered]);
+
+  const kpis = useMemo(() => {
+    if (!meta) return [];
+    if (region === "AP") {
+      const items = [
+        { label: "Base", value: meta.total.toLocaleString("pt-BR") },
+        { label: "Municípios", value: `${AP_TOTAL_MUNICIPALITIES}/${AP_TOTAL_MUNICIPALITIES}` },
+        { label: "Com telefone", value: (meta.withPhone ?? 0).toLocaleString("pt-BR") },
+        { label: "Com e-mail", value: (meta.withEmail ?? 0).toLocaleString("pt-BR") },
+      ];
+      if ((meta.withWhatsapp ?? 0) > 0) {
+        items.push({ label: "WhatsApp", value: (meta.withWhatsapp ?? 0).toLocaleString("pt-BR") });
+      }
+      return items;
+    }
+    const items = [
+      { label: "Base", value: meta.total.toLocaleString("pt-BR") },
+      { label: "Editorial", value: (meta.editorial ?? 0).toLocaleString("pt-BR") },
+      { label: "Desk score", value: (meta.deskScored ?? 0).toLocaleString("pt-BR") },
+      { label: "Com telefone", value: (meta.withPhone ?? 0).toLocaleString("pt-BR") },
+      { label: "Com e-mail", value: (meta.withEmail ?? 0).toLocaleString("pt-BR") },
+    ];
+    if ((meta.withWhatsapp ?? 0) > 0) {
+      items.push({ label: "WhatsApp", value: (meta.withWhatsapp ?? 0).toLocaleString("pt-BR") });
+    }
+    items.push({ label: "Com seguidores", value: String(meta.withFollowers ?? 0) });
+    items.push({ label: "Maior alcance", value: fmt(meta.maxFollowers) });
+    return items;
+  }, [meta, region]);
 
   const listContactStats = useMemo(() => {
     const withPhone = list.filter((v) => v.phone).length;
@@ -441,6 +485,117 @@ export default function App() {
     a.click();
   };
 
+  const renderCityBlock = (g: CityGroup) => (
+    <section key={g.name} className="city-block">
+      <header className="city-head">
+        <div>
+          <span className="city-rank">#{g.rank}</span>
+          <h2>{g.name}</h2>
+        </div>
+        <div className="city-meta">
+          <span>{g.population.toLocaleString("pt-BR")} hab.</span>
+          <span>
+            {g.vehicles.length}
+            {g.inventoryCount > g.vehicles.length ? ` de ${g.inventoryCount}` : ""} veículos
+          </span>
+        </div>
+      </header>
+      {g.vehicles.length === 0 ? (
+        <p className="city-empty">Sem veículos principais cadastrados nesta cidade.</p>
+      ) : (
+        <div className="cards">
+          {g.vehicles.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              className={selected?.id === v.id ? "card active" : "card"}
+              onClick={() => setSelected(v)}
+            >
+              <div className="card-rank">#{v.rank}</div>
+              <div className="avatar" aria-hidden>
+                {v.igProfilePic ? (
+                  <img src={v.igProfilePic} alt="" loading="lazy" />
+                ) : (
+                  <span>{initials(v.name)}</span>
+                )}
+                {v.igVerified && (
+                  <i className="badge-v" title="Verificado">
+                    ✓
+                  </i>
+                )}
+              </div>
+              <div className="card-body">
+                <strong>
+                  {v.name}
+                  {v.note && (
+                    <i className="badge-note" title={v.note}>
+                      i
+                    </i>
+                  )}
+                </strong>
+                <em>
+                  {v.type}
+                  {v.editorialBand ? ` · Faixa ${v.editorialBand}` : ""}
+                  {v.deskCoverage ? ` · ${v.deskCoverage}` : ""}
+                </em>
+                <div className="metrics">
+                  {region === "AP" ? (
+                    <>
+                      <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "sem tel"}</span>
+                      <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "sem mail"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        <b>{fmt(v.instagramFollowers)}</b> seg.
+                      </span>
+                      <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "sem tel"}</span>
+                      <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "sem mail"}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              {region !== "AP" && <div className="score-chip">{v.score.toFixed(2)}</div>}
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+
+  const renderCityCompact = (g: CityGroup) => (
+    <div key={g.name} className="city-compact">
+      <div className="city-compact-head">
+        <span className="city-rank">#{g.rank}</span>
+        <strong>{g.name}</strong>
+        <span className="muted">{g.population.toLocaleString("pt-BR")} hab.</span>
+      </div>
+      {g.vehicles.length === 0 ? (
+        <span className="city-empty-inline">Sem canal mapeado</span>
+      ) : (
+        <div className="city-compact-vehicles">
+          {g.vehicles.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              className={selected?.id === v.id ? "chip-veh active" : "chip-veh"}
+              onClick={() => setSelected(v)}
+            >
+              {v.name}
+              {v.note && (
+                <i className="badge-note" title={v.note}>
+                  i
+                </i>
+              )}
+              <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "—"}</span>
+              <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "—"}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="shell">
       <div className="glow" aria-hidden />
@@ -465,59 +620,29 @@ export default function App() {
         </div>
         {meta && (
           <div className="kpi-row">
-            <div className="kpi">
-              <span>Base</span>
-              <strong>{meta.total.toLocaleString("pt-BR")}</strong>
-            </div>
-            <div className="kpi">
-              <span>Editorial</span>
-              <strong>{(meta.editorial ?? 0).toLocaleString("pt-BR")}</strong>
-            </div>
-            <div className="kpi">
-              <span>Desk score</span>
-              <strong>{(meta.deskScored ?? 0).toLocaleString("pt-BR")}</strong>
-            </div>
-            <div className="kpi">
-              <span>Com telefone</span>
-              <strong>{(meta.withPhone ?? 0).toLocaleString("pt-BR")}</strong>
-            </div>
-            <div className="kpi">
-              <span>Com e-mail</span>
-              <strong>{(meta.withEmail ?? 0).toLocaleString("pt-BR")}</strong>
-            </div>
-            {(meta.withWhatsapp ?? 0) > 0 && (
-            <div className="kpi">
-              <span>WhatsApp</span>
-              <strong>{(meta.withWhatsapp ?? 0).toLocaleString("pt-BR")}</strong>
-            </div>
-            )}
-            <div className="kpi">
-              <span>Com seguidores</span>
-              <strong>{meta.withFollowers ?? 0}</strong>
-            </div>
-            <div className="kpi">
-              <span>Maior alcance</span>
-              <strong>{fmt(meta.maxFollowers)}</strong>
-            </div>
+            {kpis.map((k) => (
+              <div className="kpi" key={k.label}>
+                <span>{k.label}</span>
+                <strong>{k.value}</strong>
+              </div>
+            ))}
           </div>
         )}
       </header>
 
       <section className="dock">
-        <label>
-          Estado
-          <select
-            value={uf}
-            onChange={(e) => setUf(e.target.value)}
-            disabled={ufOptions.length <= 1}
-          >
-            {ufOptions.map((code) => (
-              <option key={code} value={code}>
-                {code} — {STATE_NAME[code] || code}
-              </option>
-            ))}
-          </select>
-        </label>
+        {ufOptions.length > 1 && (
+          <label>
+            Estado
+            <select value={uf} onChange={(e) => setUf(e.target.value)}>
+              {ufOptions.map((code) => (
+                <option key={code} value={code}>
+                  {code} — {STATE_NAME[code] || code}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="type-tabs" role="tablist" aria-label="Modo de ranking">
           {region !== "AP" && (
             <>
@@ -630,9 +755,13 @@ export default function App() {
           <div className="panel-title">
             <h1>
               {mode === "cidades"
-                ? `${region === "AP" ? "16 cidades · 5 principais" : "Top 10 cidades"} · ${STATE_NAME[uf]}`
+                ? region === "AP"
+                  ? `${AP_TOTAL_MUNICIPALITIES} municípios · Amapá`
+                  : `Top 10 cidades · ${STATE_NAME[uf]}`
                 : mode === "todos"
                   ? `Todos os veículos · ${STATE_NAME[uf]}`
+                : region === "AP"
+                  ? `${type} · Amapá`
                 : `Top 20 · ${STATE_NAME[uf]}${
                     mode === "editorial"
                       ? " · Editorial"
@@ -660,75 +789,22 @@ export default function App() {
 
           {mode === "cidades" ? (
             <div className="city-blocks">
-              {!loading &&
-                filteredCityGroups.map((g) => (
-                  <section key={g.name} className="city-block">
-                    <header className="city-head">
-                      <div>
-                        <span className="city-rank">#{g.rank}</span>
-                        <h2>{g.name}</h2>
-                      </div>
-                      <div className="city-meta">
-                        <span>{g.population.toLocaleString("pt-BR")} hab.</span>
-                        <span>
-                          {g.vehicles.length}
-                          {g.inventoryCount > g.vehicles.length
-                            ? ` de ${g.inventoryCount}`
-                            : ""}{" "}
-                          veículos
-                        </span>
-                      </div>
-                    </header>
-                    {g.vehicles.length === 0 ? (
-                      <p className="city-empty">Sem veículos principais cadastrados nesta cidade.</p>
-                    ) : (
-                      <div className="cards">
-                        {g.vehicles.map((v) => (
-                          <button
-                            key={v.id}
-                            type="button"
-                            className={selected?.id === v.id ? "card active" : "card"}
-                            onClick={() => setSelected(v)}
-                          >
-                            <div className="card-rank">#{v.rank}</div>
-                            <div className="avatar" aria-hidden>
-                              {v.igProfilePic ? (
-                                <img src={v.igProfilePic} alt="" loading="lazy" />
-                              ) : (
-                                <span>{initials(v.name)}</span>
-                              )}
-                              {v.igVerified && (
-                                <i className="badge-v" title="Verificado">
-                                  ✓
-                                </i>
-                              )}
-                            </div>
-                            <div className="card-body">
-                              <strong>{v.name}</strong>
-                              <em>
-                                {v.type}
-                                {v.editorialBand ? ` · Faixa ${v.editorialBand}` : ""}
-                                {v.deskCoverage ? ` · ${v.deskCoverage}` : ""}
-                              </em>
-                              <div className="metrics">
-                                <span>
-                                  <b>{fmt(v.instagramFollowers)}</b> seg.
-                                </span>
-                                <span className={v.phone ? "ok" : "miss"}>
-                                  {v.phone ? "tel" : "sem tel"}
-                                </span>
-                                <span className={v.email ? "ok" : "miss"}>
-                                  {v.email ? "mail" : "sem mail"}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="score-chip">{v.score.toFixed(2)}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                ))}
+              {!loading && region === "AP" ? (
+                <>
+                  <h3 className="city-group-heading">
+                    Top {AP_TOP_CITIES_COUNT} municípios
+                  </h3>
+                  {filteredCityGroups.slice(0, AP_TOP_CITIES_COUNT).map(renderCityBlock)}
+                  <h3 className="city-group-heading">
+                    Demais municípios ({Math.max(0, filteredCityGroups.length - AP_TOP_CITIES_COUNT)})
+                  </h3>
+                  <div className="city-compact-list">
+                    {filteredCityGroups.slice(AP_TOP_CITIES_COUNT).map(renderCityCompact)}
+                  </div>
+                </>
+              ) : (
+                !loading && filteredCityGroups.map(renderCityBlock)
+              )}
             </div>
           ) : (
           <div className="cards">
@@ -750,7 +826,14 @@ export default function App() {
                     {v.igVerified && <i className="badge-v" title="Verificado">✓</i>}
                   </div>
                   <div className="card-body">
-                    <strong>{v.name}</strong>
+                    <strong>
+                      {v.name}
+                      {v.note && (
+                        <i className="badge-note" title={v.note}>
+                          i
+                        </i>
+                      )}
+                    </strong>
                     <em>
                       {v.city}
                       {mode !== "categoria" ? ` · ${v.type}` : ""}
@@ -759,20 +842,30 @@ export default function App() {
                       {v.igCategory ? ` · ${v.igCategory}` : ""}
                     </em>
                     <div className="metrics">
-                      <span>
-                        <b>{fmt(v.instagramFollowers)}</b> seg.
-                      </span>
-                      <span>
-                        <b>{fmt(v.igPostsCount)}</b> posts
-                      </span>
-                      <span>
-                        <b>{v.igEngagementRate != null ? `${v.igEngagementRate}%` : "—"}</b> eng.
-                      </span>
-                      <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "sem tel"}</span>
-                      <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "sem mail"}</span>
+                      {region === "AP" ? (
+                        <>
+                          <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "sem tel"}</span>
+                          <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "sem mail"}</span>
+                          <span className={v.whatsapp ? "ok" : "miss"}>{v.whatsapp ? "whatsapp" : "sem whatsapp"}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            <b>{fmt(v.instagramFollowers)}</b> seg.
+                          </span>
+                          <span>
+                            <b>{fmt(v.igPostsCount)}</b> posts
+                          </span>
+                          <span>
+                            <b>{v.igEngagementRate != null ? `${v.igEngagementRate}%` : "—"}</b> eng.
+                          </span>
+                          <span className={v.phone ? "ok" : "miss"}>{v.phone ? "tel" : "sem tel"}</span>
+                          <span className={v.email ? "ok" : "miss"}>{v.email ? "mail" : "sem mail"}</span>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="score-chip">{v.score.toFixed(2)}</div>
+                  {region !== "AP" && <div className="score-chip">{v.score.toFixed(2)}</div>}
                 </button>
               ))}
           </div>
@@ -798,44 +891,73 @@ export default function App() {
                     {selected.igVerified ? " · verificado" : ""}
                     {selected.igIsBusiness ? " · business" : ""}
                   </p>
-                  <h2>{selected.name}</h2>
+                  <h2>
+                    {selected.name}
+                    {selected.note && (
+                      <i className="badge-note" title={selected.note}>
+                        i
+                      </i>
+                    )}
+                  </h2>
                   {selected.displayName && selected.displayName !== selected.name && (
                     <p className="aka">{selected.displayName}</p>
                   )}
                   <p className="place">
                     {selected.city}, {selected.state}
                   </p>
+                  {selected.note && <p className="institutional-note">{selected.note}</p>}
                 </div>
               </div>
 
-              <div className="stat-grid">
-                <div>
-                  <span>Seguidores</span>
-                  <strong>{fmt(selected.instagramFollowers)}</strong>
+              {region === "AP" ? (
+                <div className="stat-grid ap">
+                  <div>
+                    <span>Tipo</span>
+                    <strong>{selected.type}</strong>
+                  </div>
+                  <div>
+                    <span>Município</span>
+                    <strong>{selected.city}</strong>
+                  </div>
+                  <div>
+                    <span>Completude</span>
+                    <strong>{COMPLETENESS_LABEL[selected.completeness ?? ""] ?? "—"}</strong>
+                  </div>
+                  <div>
+                    <span>Confiança</span>
+                    <strong>{selected.confidence}</strong>
+                  </div>
                 </div>
-                <div>
-                  <span>Seguindo</span>
-                  <strong>{fmt(selected.igFollowing)}</strong>
+              ) : (
+                <div className="stat-grid">
+                  <div>
+                    <span>Seguidores</span>
+                    <strong>{fmt(selected.instagramFollowers)}</strong>
+                  </div>
+                  <div>
+                    <span>Seguindo</span>
+                    <strong>{fmt(selected.igFollowing)}</strong>
+                  </div>
+                  <div>
+                    <span>Posts</span>
+                    <strong>{fmt(selected.igPostsCount)}</strong>
+                  </div>
+                  <div>
+                    <span>Engajamento</span>
+                    <strong>
+                      {selected.igEngagementRate != null ? `${selected.igEngagementRate}%` : "—"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Média likes</span>
+                    <strong>{fmt(selected.igAvgLikes)}</strong>
+                  </div>
+                  <div>
+                    <span>Score</span>
+                    <strong>{selected.score.toFixed(3)}</strong>
+                  </div>
                 </div>
-                <div>
-                  <span>Posts</span>
-                  <strong>{fmt(selected.igPostsCount)}</strong>
-                </div>
-                <div>
-                  <span>Engajamento</span>
-                  <strong>
-                    {selected.igEngagementRate != null ? `${selected.igEngagementRate}%` : "—"}
-                  </strong>
-                </div>
-                <div>
-                  <span>Média likes</span>
-                  <strong>{fmt(selected.igAvgLikes)}</strong>
-                </div>
-                <div>
-                  <span>Score</span>
-                  <strong>{selected.score.toFixed(3)}</strong>
-                </div>
-              </div>
+              )}
 
               {selected.editorialJustification && (
                 <div className="bio editorial">
@@ -963,12 +1085,20 @@ export default function App() {
                 </div>
               )}
 
-              <p className="trust">
-                Confiança {selected.confidence}
-                {selected.lastEnrichedAt
-                  ? ` · enriquecido ${new Date(selected.lastEnrichedAt).toLocaleString("pt-BR")}`
-                  : " · ainda sem enrichment rico"}
-              </p>
+              {region === "AP" ? (
+                selected.lastEnrichedAt && (
+                  <p className="trust">
+                    Enriquecido em {new Date(selected.lastEnrichedAt).toLocaleString("pt-BR")}
+                  </p>
+                )
+              ) : (
+                <p className="trust">
+                  Confiança {selected.confidence}
+                  {selected.lastEnrichedAt
+                    ? ` · enriquecido ${new Date(selected.lastEnrichedAt).toLocaleString("pt-BR")}`
+                    : " · ainda sem enrichment rico"}
+                </p>
+              )}
             </>
           )}
         </aside>
