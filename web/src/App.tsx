@@ -94,6 +94,8 @@ type AppConfig = {
   footer: string;
   dispatchConfigured: boolean;
   apifyConfigured: boolean;
+  openRouterConfigured?: boolean;
+  discoverAvailable?: boolean;
 };
 
 type CityGroup = {
@@ -189,6 +191,7 @@ export default function App() {
   const [q, setQ] = useState("");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("todos");
   const [cityFocus, setCityFocus] = useState<string>("");
+  const [topCitiesOnly, setTopCitiesOnly] = useState(false);
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -204,6 +207,25 @@ export default function App() {
   const [dispatchIds, setDispatchIds] = useState<string[]>([]);
   const [dispatchBusy, setDispatchBusy] = useState(false);
   const [dispatchResult, setDispatchResult] = useState<string | null>(null);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [discoverBusy, setDiscoverBusy] = useState(false);
+  const [discoverMsg, setDiscoverMsg] = useState<string | null>(null);
+  const [discoverJobId, setDiscoverJobId] = useState<string | null>(null);
+  const [discoverCandidates, setDiscoverCandidates] = useState<
+    Array<{
+      name: string;
+      type: string;
+      city: string;
+      phone?: string | null;
+      email?: string | null;
+      website?: string | null;
+      whatsapp?: string | null;
+      sourceNote?: string | null;
+      applied?: boolean;
+    }>
+  >([]);
+  const [discoverSelected, setDiscoverSelected] = useState<number[]>([]);
+  const [discoverScope, setDiscoverScope] = useState<"city" | "all">("all");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -481,6 +503,81 @@ export default function App() {
     }
   };
 
+  const runDiscover = async () => {
+    if (region !== "AP") return;
+    setDiscoverBusy(true);
+    setDiscoverMsg("Consultando Perplexity (OpenRouter)…");
+    setDiscoverCandidates([]);
+    setDiscoverSelected([]);
+    setDiscoverOpen(true);
+    try {
+      const body: { city?: string; withApify?: boolean } = {
+        withApify: Boolean(config?.apifyConfigured),
+      };
+      if (discoverScope === "city" && cityFocus) body.city = cityFocus;
+      const res = await fetch("/api/discover/run", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setDiscoverJobId(data.id);
+      setDiscoverMsg(
+        `Job ${data.id}: varrendo ${data.cities?.length || "?"} cidade(s)…`
+      );
+      const poll = setInterval(async () => {
+        const st = await fetch(`/api/discover/status?id=${data.id}`).then((r) => r.json());
+        if (st.progress) setDiscoverMsg(st.progress);
+        if (st.status === "done" || st.status === "error") {
+          clearInterval(poll);
+          setDiscoverBusy(false);
+          const cands = Array.isArray(st.candidates) ? st.candidates : [];
+          setDiscoverCandidates(cands);
+          setDiscoverSelected(cands.map((_: unknown, i: number) => i));
+          if (st.status === "error") {
+            setDiscoverMsg(`Erro: ${JSON.stringify(st.errors?.[0] || st)}`);
+          } else {
+            setDiscoverMsg(
+              cands.length
+                ? `${cands.length} candidatos novos. Selecione e adicione ao painel.`
+                : "Nenhum canal novo encontrado (já estavam no inventário)."
+            );
+          }
+        }
+      }, 3000);
+    } catch (e) {
+      setDiscoverBusy(false);
+      setDiscoverMsg(String(e));
+    }
+  };
+
+  const applyDiscover = async () => {
+    if (!discoverJobId || !discoverSelected.length) return;
+    setDiscoverBusy(true);
+    setDiscoverMsg("Gravando no banco…");
+    try {
+      const res = await fetch("/api/discover/apply", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jobId: discoverJobId, indices: discoverSelected }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setDiscoverMsg(`${data.applied} veículos adicionados ao painel.`);
+      setDiscoverCandidates((prev) =>
+        prev.map((c, i) => (discoverSelected.includes(i) ? { ...c, applied: true } : c))
+      );
+      setDiscoverSelected([]);
+      loadMeta();
+      loadList();
+    } catch (e) {
+      setDiscoverMsg(String(e));
+    } finally {
+      setDiscoverBusy(false);
+    }
+  };
+
   const exportCsv = () => {
     const header = [
       "rank", "name", "type", "city", "address",
@@ -714,12 +811,30 @@ export default function App() {
           <button
             type="button"
             role="tab"
-            aria-selected={mode === "cidades"}
-            className={mode === "cidades" ? "tab on" : "tab"}
-            onClick={() => setMode("cidades")}
+            aria-selected={mode === "cidades" && !topCitiesOnly}
+            className={mode === "cidades" && !topCitiesOnly ? "tab on" : "tab"}
+            onClick={() => {
+              setMode("cidades");
+              setTopCitiesOnly(false);
+            }}
           >
             Por cidade
           </button>
+          {region === "AP" && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "cidades" && topCitiesOnly}
+            className={mode === "cidades" && topCitiesOnly ? "tab on" : "tab"}
+            onClick={() => {
+              setMode("cidades");
+              setTopCitiesOnly(true);
+              setCityFocus("");
+            }}
+          >
+            Top 3 cidades
+          </button>
+          )}
           {region === "AP" && (
           <button
             type="button"
@@ -793,6 +908,24 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={() => setDispatchOpen(true)} disabled={!filtered.length}>
             WhatsApp / E-mail
           </button>
+          {region === "AP" && (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => {
+                setDiscoverOpen(true);
+                if (!discoverCandidates.length && !discoverBusy) setDiscoverMsg(null);
+              }}
+              disabled={discoverBusy}
+              title={
+                config?.openRouterConfigured
+                  ? "Descobrir canais com Perplexity via OpenRouter"
+                  : "Configure OPENROUTER_API_KEY no serviço API do Amapá"
+              }
+            >
+              {discoverBusy ? "Descobrindo…" : "Perplexity"}
+            </button>
+          )}
           <button type="button" className="btn ghost" onClick={() => runEnrich("contacts")} disabled={enriching}>
             Contatos
           </button>
@@ -812,7 +945,9 @@ export default function App() {
             <h1>
               {mode === "cidades"
                 ? region === "AP"
-                  ? `${AP_TOTAL_MUNICIPALITIES} municípios · Amapá`
+                  ? topCitiesOnly
+                    ? `Top ${AP_TOP_CITIES_COUNT} cidades · 5 principais canais`
+                    : `${AP_TOTAL_MUNICIPALITIES} municípios · Amapá`
                   : `Top 10 cidades · ${STATE_NAME[uf]}`
                 : mode === "todos"
                   ? `Todos os veículos · ${STATE_NAME[uf]}`
@@ -847,6 +982,13 @@ export default function App() {
             <div className="city-blocks">
               {!loading && cityFocus ? (
                 filteredCityGroups.filter((g) => g.name === cityFocus).map(renderCityBlock)
+              ) : !loading && region === "AP" && topCitiesOnly ? (
+                <>
+                  <h3 className="city-group-heading">
+                    Top {AP_TOP_CITIES_COUNT} cidades · 5 principais canais cada
+                  </h3>
+                  {filteredCityGroups.slice(0, AP_TOP_CITIES_COUNT).map(renderCityBlock)}
+                </>
               ) : !loading && region === "AP" ? (
                 <>
                   <h3 className="city-group-heading">
@@ -1309,6 +1451,110 @@ export default function App() {
                   : dispatchModo === "enviar"
                     ? "Enviar agora"
                     : "Simular disparo"}
+              </button>
+            </footer>
+          </aside>
+        </div>
+      )}
+
+      {discoverOpen && region === "AP" && (
+        <div className="drawer-backdrop" onClick={() => !discoverBusy && setDiscoverOpen(false)}>
+          <aside
+            className="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discover-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="drawer-head">
+              <div>
+                <p className="eyebrow">Descoberta online</p>
+                <h2 id="discover-title">Perplexity · OpenRouter</h2>
+                <p className="drawer-sub">
+                  {config?.openRouterConfigured
+                    ? "Varre municípios do Amapá e lista canais que ainda não estão no inventário."
+                    : "OPENROUTER_API_KEY ausente neste serviço — configure no Easypanel (API Amapá)."}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => setDiscoverOpen(false)}
+                disabled={discoverBusy}
+              >
+                Fechar
+              </button>
+            </header>
+
+            <div className="drawer-grid">
+              <label>
+                Escopo
+                <select
+                  value={discoverScope}
+                  onChange={(e) => setDiscoverScope(e.target.value as "city" | "all")}
+                  disabled={discoverBusy}
+                >
+                  <option value="all">Todas as 16 cidades</option>
+                  <option value="city" disabled={!cityFocus}>
+                    {cityFocus ? `Só ${cityFocus}` : "Só cidade (selecione em Por cidade)"}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            {discoverMsg && <p className="dispatch-result">{discoverMsg}</p>}
+
+            {discoverCandidates.length > 0 && (
+              <div className="dispatch-preview">
+                <strong>
+                  {discoverSelected.length} selecionados de {discoverCandidates.length}
+                </strong>
+                <div className="dispatch-list">
+                  {discoverCandidates.map((c, i) => (
+                    <label key={`${c.city}-${c.name}-${i}`} className="dispatch-row">
+                      <input
+                        type="checkbox"
+                        checked={discoverSelected.includes(i)}
+                        disabled={Boolean(c.applied) || discoverBusy}
+                        onChange={() => {
+                          setDiscoverSelected((prev) =>
+                            prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+                          );
+                        }}
+                      />
+                      <span className="rank">{c.type}</span>
+                      <span className="name">
+                        {c.name}
+                        {c.applied ? " · já adicionado" : ""}
+                      </span>
+                      <span className="hint">
+                        {c.city}
+                        {c.website ? " · site" : ""}
+                        {c.phone ? " · tel" : ""}
+                        {c.email ? " · mail" : ""}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <footer className="drawer-foot">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={discoverBusy || !config?.openRouterConfigured}
+                onClick={runDiscover}
+              >
+                {discoverBusy ? "Buscando…" : "Rodar descoberta"}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={discoverBusy || !discoverJobId || !discoverSelected.length}
+                onClick={applyDiscover}
+              >
+                Adicionar ao painel
               </button>
             </footer>
           </aside>

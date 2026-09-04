@@ -4,6 +4,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { getJob, listJobs, startEnrichment } from "./enrich.js";
+import {
+  applyDiscoverResults,
+  getDiscoverJob,
+  isOpenRouterConfigured,
+  listDiscoverJobs,
+  startDiscover,
+} from "./discover.js";
 import { defaultLimitPerCity, getTopCitiesForUf, resolveCityName } from "./cities.js";
 import {
   CATALOG,
@@ -544,7 +551,8 @@ app.get("/api/config", (_req, res) => {
     footer: REGION.footer,
     dispatchConfigured: Boolean(process.env.N8N_DISPATCH_WEBHOOK),
     apifyConfigured: Boolean(process.env.APIFY_TOKEN),
-    openRouterConfigured: Boolean(process.env.OPENROUTER_API_KEY),
+    openRouterConfigured: isOpenRouterConfigured(),
+    discoverAvailable: RADAR_REGION === "AP" && (isOpenRouterConfigured() || Boolean(process.env.APIFY_TOKEN)),
   });
 });
 
@@ -860,6 +868,56 @@ app.post("/api/enrich/run", async (req, res) => {
     res.status(202).json(job);
   } catch (err) {
     res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+app.get("/api/discover/status", async (req, res) => {
+  const id = req.query.id;
+  if (id) {
+    const job = getDiscoverJob(String(id));
+    if (!job) return res.status(404).json({ error: "job não encontrado" });
+    return res.json(job);
+  }
+  res.json({
+    openRouterConfigured: isOpenRouterConfigured(),
+    apifyConfigured: Boolean(process.env.APIFY_TOKEN),
+    jobs: listDiscoverJobs().slice(0, 10),
+  });
+});
+
+app.post("/api/discover/run", async (req, res) => {
+  if (!requireEnrichAuth(req, res)) return;
+  if (RADAR_REGION !== "AP") {
+    return res.status(403).json({
+      error: "Descoberta Perplexity só nesta instância do Amapá (RADAR_REGION=AP).",
+    });
+  }
+  try {
+    const job = await startDiscover(pool, {
+      city: req.body?.city || null,
+      cities: req.body?.cities || null,
+      withApify: Boolean(req.body?.withApify),
+      apifyOnly: Boolean(req.body?.apifyOnly),
+    });
+    res.status(202).json(job);
+  } catch (err) {
+    res.status(400).json({ error: String(err.message || err) });
+  }
+});
+
+app.post("/api/discover/apply", async (req, res) => {
+  if (!requireEnrichAuth(req, res)) return;
+  if (RADAR_REGION !== "AP") {
+    return res.status(403).json({ error: "Só disponível no Radar Amapá." });
+  }
+  try {
+    const jobId = req.body?.jobId || req.body?.id;
+    if (!jobId) return res.status(400).json({ error: "jobId obrigatório" });
+    const indices = Array.isArray(req.body?.indices) ? req.body.indices.map(Number) : null;
+    const result = await applyDiscoverResults(pool, String(jobId), indices);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: String(err.message || err) });
   }
 });
 
